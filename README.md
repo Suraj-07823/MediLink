@@ -14,37 +14,20 @@ MediLink is a full-stack healthcare platform built with React, Node.js, Express,
 - Docker Compose stack with MongoDB, backend, and Nginx reverse proxy
 - GitHub Actions CI/CD pipeline template for build and deploy
 
-## Local development
+## Quick Start
 
-1. Copy environment variables:
+1. Clone the repository
+2. Copy `backend/.env.example` to `backend/.env`
+3. Run `docker-compose up --build`
+4. Open `http://localhost`
 
-```sh
-cp backend/.env.example backend/.env
-```
+For detailed setup instructions, see [SETUP.md](SETUP.md).
 
-2. Start services:
+## Production Deployment
 
-```sh
-docker-compose up --build
-```
+Configure GitHub secrets for AWS and EC2, then push to main branch to trigger CI/CD.
 
-3. Open the app:
-
-- Frontend: `http://localhost`
-- API: `http://localhost/api`
-
-## Production deployment
-
-This repository includes a `github/workflows/ci-cd.yml` workflow. Configure the following secrets in GitHub:
-
-- `AWS_ACCESS_KEY_ID`
-- `AWS_SECRET_ACCESS_KEY`
-- `AWS_REGION`
-- `EC2_HOST`
-- `EC2_USER`
-- `EC2_SSH_KEY`
-
-## Project structure
+## Project Structure
 
 - `backend/` — Express API, MongoDB models, authentication, scheduling endpoints
 - `frontend/` — React app with Tailwind CSS
