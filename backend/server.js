@@ -2,41 +2,80 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDatabase = require('./config/db');
-const authRoutes = require('./routes/auth');
-const doctorRoutes = require('./routes/doctors');
-const appointmentRoutes = require('./routes/appointments');
-const prescriptionRoutes = require('./routes/prescriptions');
 
+// Load environment variables
 dotenv.config();
+
+// Import routes
+const authRoutes = require('./routes/auth');
+// Will import more routes as we build them
+// const patientRoutes = require('./routes/patient');
+// const doctorRoutes = require('./routes/doctor');
+// const adminRoutes = require('./routes/admin');
+
+// Import models (ensures they're registered with MongoDB)
+const User = require('./models/User');
+const Doctor = require('./models/Doctor');
+const Slot = require('./models/Slot');
+const Appointment = require('./models/Appointment');
+const Prescription = require('./models/Prescription');
+const MedicalRecord = require('./models/MedicalRecord');
+
+// Initialize Express app
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+// Middleware
+app.use(cors()); // Enable cross-origin requests for frontend
+app.use(express.json()); // Parse JSON request bodies
+app.use(express.urlencoded({ extended: true })); // Parse form data
 
+// Connect to MongoDB database
 connectDatabase();
 
-const Doctor = require('./models/Doctor');
-
-const seedDoctors = async () => {
-  const count = await Doctor.countDocuments();
-  if (count === 0) {
-    await Doctor.create([
-      { name: 'Dr. Maya Khan', speciality: 'Cardiology', location: 'Central Clinic', slots: ['09:00', '10:00', '14:00'], description: 'Expert in cardiovascular health.' },
-      { name: 'Dr. Raj Patel', speciality: 'Orthopedics', location: 'Westside Hospital', slots: ['11:00', '13:00', '16:00'], description: 'Bone and joint specialist.' },
-      { name: 'Dr. Aisha Ahmed', speciality: 'Dermatology', location: 'Sunshine Medical', slots: ['08:30', '12:00', '15:30'], description: 'Skin and cosmetic care.' }
-    ]);
-    console.log('Seeded initial doctors');
-  }
-};
-
-seedDoctors().catch((error) => console.error('Doctor seed failed:', error.message));
-
+// ========== ROUTES ==========
 app.use('/api/auth', authRoutes);
-app.use('/api/doctors', doctorRoutes);
-app.use('/api/appointments', appointmentRoutes);
-app.use('/api/prescriptions', prescriptionRoutes);
+// app.use('/api/patient', patientRoutes);
+// app.use('/api/doctor', doctorRoutes);
+// app.use('/api/admin', adminRoutes);
 
-app.get('/api/health', (req, res) => res.json({ status: 'ok', service: 'MediLink backend' }));
+// ========== HEALTH CHECK ==========
+// Simple endpoint to verify backend is running
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    service: 'MediLink Backend',
+    timestamp: new Date().toISOString()
+  });
+});
 
+// ========== 404 HANDLER ==========
+// Catch all undefined routes
+app.use('*', (req, res) => {
+  res.status(404).json({ 
+    message: 'Route not found',
+    requestedPath: req.originalUrl
+  });
+});
+
+// ========== ERROR HANDLER ==========
+// Global error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Server error:', err);
+  res.status(err.status || 500).json({
+    message: err.message || 'Internal server error',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+  });
+});
+
+// ========== START SERVER ==========
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`
+  ╔══════════════════════════════════════╗
+  ║   MediLink Backend Server Running    ║
+  ║   Port: ${PORT}                          ║
+  ║   Environment: ${process.env.NODE_ENV || 'development'}              ║
+  ║   MongoDB: Connected                 ║
+  ╚══════════════════════════════════════╝
+  `);
+});

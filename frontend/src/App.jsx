@@ -1,36 +1,79 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
+import Login from './pages/Login';
+import Register from './pages/Register';
 import Doctors from './pages/Doctors';
 import Dashboard from './pages/Dashboard';
 import Booking from './pages/Booking';
 import CheckIn from './pages/CheckIn';
 import Prescription from './pages/Prescription';
 
-function App() {
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('medilink_token'));
+// ProtectedRoute component: only logged-in users can access
+function ProtectedRoute({ children, requiredRole = null }) {
+  const { isAuthenticated, user } = useAuth();
 
-  useEffect(() => {
-    if (token) {
-      setUser(JSON.parse(localStorage.getItem('medilink_user')));
-      axios.defaults.headers.common.Authorization = `Bearer ${token}`;
-    }
-  }, [token]);
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
 
+  if (requiredRole && user?.role !== requiredRole) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+}
+
+function AppContent() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      <Navbar user={user} setUser={setUser} setToken={setToken} />
+      <Navbar />
       <main className="container mx-auto px-4 py-8">
         <Routes>
+          {/* Public routes */}
           <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           <Route path="/doctors" element={<Doctors />} />
-          <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/" />} />
-          <Route path="/booking/:doctorId" element={user ? <Booking /> : <Navigate to="/" />} />
-          <Route path="/checkin" element={user ? <CheckIn /> : <Navigate to="/" />} />
-          <Route path="/prescription" element={user ? <Prescription /> : <Navigate to="/" />} />
+
+          {/* Patient routes */}
+          <Route
+            path="/patient/dashboard"
+            element={
+              <ProtectedRoute requiredRole="patient">
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/booking/:doctorId"
+            element={
+              <ProtectedRoute requiredRole="patient">
+                <Booking />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/prescription"
+            element={
+              <ProtectedRoute requiredRole="patient">
+                <Prescription />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Check-in route (all authenticated users) */}
+          <Route
+            path="/checkin"
+            element={
+              <ProtectedRoute>
+                <CheckIn />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* 404 fallback */}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </main>
@@ -38,4 +81,10 @@ function App() {
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+}
