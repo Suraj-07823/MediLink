@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 // Create authentication context
@@ -15,31 +16,48 @@ export const AuthProvider = ({ children }) => {
   
   // State: loading flag for async operations
   const [loading, setLoading] = useState(false);
+  const [sessionLoading, setSessionLoading] = useState(true);
   
   // State: error messages
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
-  // On app load, check if user was previously logged in (token in localStorage)
+  // On app load, verify token with backend and restore session
   useEffect(() => {
-    const savedToken = localStorage.getItem('medilink_auth_token');
-    const savedUser = localStorage.getItem('medilink_auth_user');
-    const tokenExpiry = localStorage.getItem('medilink_auth_expiry');
-    
-    if (savedToken && savedUser && tokenExpiry) {
-      const now = Date.now();
-      if (now < parseInt(tokenExpiry)) {
+    const verifySession = async () => {
+      const savedToken = localStorage.getItem('medilink_auth_token');
+      if (!savedToken) {
+        setSessionLoading(false);
+        return;
+      }
+
+      axios.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`;
+      try {
+        const response = await axios.get('/api/auth/me');
+        const userData = response.data.user;
+
         setToken(savedToken);
-        setUser(JSON.parse(savedUser));
-        // Set default Authorization header for all axios requests
-        axios.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`;
-      } else {
-        // Token expired, clean up
+        setUser(userData);
+        setError(null);
+
+        // Renew localStorage expiry for 30 days from now
+        const expiryTime = Date.now() + (30 * 24 * 60 * 60 * 1000);
+        localStorage.setItem('medilink_auth_token', savedToken);
+        localStorage.setItem('medilink_auth_user', JSON.stringify(userData));
+        localStorage.setItem('medilink_auth_expiry', expiryTime.toString());
+      } catch (err) {
         localStorage.removeItem('medilink_auth_token');
         localStorage.removeItem('medilink_auth_user');
         localStorage.removeItem('medilink_auth_expiry');
+        delete axios.defaults.headers.common['Authorization'];
+        navigate('/login');
+      } finally {
+        setSessionLoading(false);
       }
-    }
-  }, []);
+    };
+
+    verifySession();
+  }, [navigate]);
 
   // ========== LOGIN FUNCTION ==========
   // POST request to /api/auth/login with email and password
@@ -49,7 +67,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/login`, {
+      const response = await axios.post('/api/auth/login', {
         email,
         password
       });
@@ -60,8 +78,8 @@ export const AuthProvider = ({ children }) => {
       setToken(newToken);
       setUser(userData);
 
-      // Save to localStorage with expiry (12 hours from now)
-      const expiryTime = Date.now() + (12 * 60 * 60 * 1000); // 12 hours
+      // Save to localStorage with expiry (30 days from now)
+      const expiryTime = Date.now() + (30 * 24 * 60 * 60 * 1000); // 30 days
       localStorage.setItem('medilink_auth_token', newToken);
       localStorage.setItem('medilink_auth_user', JSON.stringify(userData));
       localStorage.setItem('medilink_auth_expiry', expiryTime.toString());
@@ -87,7 +105,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/register`, userData);
+      const response = await axios.post('/api/auth/register', userData);
 
       const { token: newToken, user: userData2 } = response.data;
 
@@ -96,7 +114,7 @@ export const AuthProvider = ({ children }) => {
       setUser(userData2);
 
       // Save to localStorage with expiry
-      const expiryTime = Date.now() + (12 * 60 * 60 * 1000); // 12 hours
+      const expiryTime = Date.now() + (30 * 24 * 60 * 60 * 1000); // 30 days
       localStorage.setItem('medilink_auth_token', newToken);
       localStorage.setItem('medilink_auth_user', JSON.stringify(userData2));
       localStorage.setItem('medilink_auth_expiry', expiryTime.toString());
@@ -122,7 +140,7 @@ export const AuthProvider = ({ children }) => {
       setError(null);
 
       const response = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/auth/register-doctor`,
+        '/api/auth/register-doctor',
         doctorData
       );
 
@@ -131,7 +149,7 @@ export const AuthProvider = ({ children }) => {
       setToken(newToken);
       setUser(userData);
 
-      const expiryTime = Date.now() + (12 * 60 * 60 * 1000); // 12 hours
+      const expiryTime = Date.now() + (30 * 24 * 60 * 60 * 1000); // 30 days
       localStorage.setItem('medilink_auth_token', newToken);
       localStorage.setItem('medilink_auth_user', JSON.stringify(userData));
       localStorage.setItem('medilink_auth_expiry', expiryTime.toString());

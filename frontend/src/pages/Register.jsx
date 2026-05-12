@@ -55,6 +55,16 @@ export default function Register() {
     });
   }, [selectedRole]);
 
+// This function runs every time user types in any input field
+// e.target.name = which field (email, phone, name etc)
+// e.target.value = what the user typed
+const handleChange = (e) => {
+  setFormData(prev => ({
+    ...prev,
+    [e.target.name]: e.target.value
+  }));
+};
+
   // Password strength validation
   const validatePassword = (password) => {
     const minLength = 8;
