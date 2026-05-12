@@ -45,7 +45,7 @@ const doctorSchema = new mongoose.Schema({
   },
   clinicAddress: {
     area: String,
-    city: { type: String, default: 'Nagpur' },
+    city: String,
     pincode: String
   },
 
@@ -57,9 +57,8 @@ const doctorSchema = new mongoose.Schema({
       default: 'Point' 
     },
     coordinates: {
-      type: [Number], 
+      type: [Number]
       // [longitude, latitude] format for MongoDB geospatial queries
-      index: '2dsphere'
     }
   },
 
@@ -96,22 +95,12 @@ const doctorSchema = new mongoose.Schema({
   totalReviews: { 
     type: Number, 
     default: 0 
-  },
-
-  // Timestamps
-  createdAt: { 
-    type: Date, 
-    default: Date.now 
-  },
-  updatedAt: { 
-    type: Date, 
-    default: Date.now 
   }
 }, { timestamps: true });
 
 // Create geospatial index for GPS-based search
-doctorSchema.index({ 'location.coordinates': '2dsphere' });
-doctorSchema.index({ speciality: 1, status: 1 });
+doctorSchema.index({ location: '2dsphere' });
+doctorSchema.index({ speciality: 1, 'clinicAddress.city': 1, status: 1 });
 doctorSchema.index({ userId: 1 });
 
 module.exports = mongoose.model('Doctor', doctorSchema);

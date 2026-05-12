@@ -122,16 +122,6 @@ const userSchema = new mongoose.Schema({
     type: Boolean, 
     default: true 
     // account active or suspended
-  },
-
-  // Timestamps
-  createdAt: { 
-    type: Date, 
-    default: Date.now 
-  },
-  updatedAt: { 
-    type: Date, 
-    default: Date.now 
   }
 }, { timestamps: true });
 

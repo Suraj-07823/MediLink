@@ -40,14 +40,14 @@ const protect = async (req, res, next) => {
     // Attach user to request and proceed to next middleware/route
     next();
   } catch (error) {
+    console.error('Token verification error:', error.message);
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({ 
         message: 'Token expired. Please login again.' 
       });
     }
     res.status(401).json({ 
-      message: 'Token verification failed', 
-      error: error.message 
+      message: 'Token verification failed' 
     });
   }
 };
@@ -95,9 +95,9 @@ const checkDoctorApproval = async (req, res, next) => {
     req.doctor = doctor;
     next();
   } catch (error) {
+    console.error('Error checking doctor approval:', error.message);
     res.status(500).json({ 
-      message: 'Error checking doctor approval', 
-      error: error.message 
+      message: 'Internal server error' 
     });
   }
 };

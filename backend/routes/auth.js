@@ -1,18 +1,20 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const Doctor = require('../models/Doctor');
+const { protect } = require('../middleware/auth');
 
 const router = express.Router();
 
 // Helper function to generate JWT token
-// Takes user ID and returns a signed JWT valid for 12 hours
+// Takes user ID and returns a signed JWT valid for 30 days
 const createToken = (id) => {
   return jwt.sign(
     { id }, 
     process.env.JWT_SECRET, 
-    { expiresIn: '12h' }
+    { expiresIn: '30d' }
   );
 };
 
@@ -28,6 +30,13 @@ router.post('/register', async (req, res) => {
     if (!name || !email || !phone || !password || !role) {
       return res.status(400).json({ 
         message: 'Please provide: name, email, phone, password, role' 
+      });
+    }
+
+    // Validate role - only patient and admin can register here
+    if (!['patient', 'admin'].includes(role)) {
+      return res.status(400).json({ 
+        message: 'Invalid role. Use /register-doctor for doctor registration.' 
       });
     }
 
@@ -87,6 +96,9 @@ router.post('/register', async (req, res) => {
 // Body: { name, email, phone, password, speciality, qualification, experience, regNumber, consultationFee, clinicName, clinicAddress, about }
 // Returns: { token, user, doctorProfile }
 router.post('/register-doctor', async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const { 
       name, email, phone, password, 
@@ -96,22 +108,28 @@ router.post('/register-doctor', async (req, res) => {
 
     // Validate required doctor fields
     if (!name || !email || !phone || !password || !speciality || !qualification || !regNumber) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(400).json({ 
         message: 'Missing required doctor fields' 
       });
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email }).session(session);
     if (existingUser) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(409).json({ 
         message: 'Email already registered' 
       });
     }
 
     // Check if registration number already used
-    const existingDoctor = await Doctor.findOne({ regNumber });
+    const existingDoctor = await Doctor.findOne({ regNumber }).session(session);
     if (existingDoctor) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(409).json({ 
         message: 'Medical registration number already registered' 
       });
@@ -137,7 +155,7 @@ router.post('/register-doctor', async (req, res) => {
       about
     });
 
-    await newUser.save();
+    await newUser.save({ session });
 
     // Create doctor profile (linked to user)
     const doctorProfile = new Doctor({
@@ -153,7 +171,11 @@ router.post('/register-doctor', async (req, res) => {
       status: 'pending'  // awaiting admin approval
     });
 
-    await doctorProfile.save();
+    await doctorProfile.save({ session });
+
+    // Commit transaction
+    await session.commitTransaction();
+    session.endSession();
 
     // Generate token
     const token = createToken(newUser._id);
@@ -170,6 +192,8 @@ router.post('/register-doctor', async (req, res) => {
       }
     });
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
     console.error('Doctor registration error:', error);
     res.status(500).json({ 
       message: 'Doctor registration failed', 
@@ -244,6 +268,47 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ 
       message: 'Login failed', 
       error: error.message 
+    });
+  }
+});
+
+// ========== GET CURRENT USER ==========
+// GET /api/auth/me
+// Protected route that returns the current authenticated user
+router.get('/me', protect, async (req, res) => {
+  try {
+    const user = req.user;
+
+    if (!user) {
+      return res.status(404).json({
+        message: 'Authenticated user not found'
+      });
+    }
+
+    let doctorStatus = null;
+    if (user.role === 'doctor') {
+      const doctorProfile = await Doctor.findOne({ userId: user._id });
+      doctorStatus = doctorProfile?.status || 'pending';
+    }
+
+    res.status(200).json({
+      message: 'Current user retrieved successfully',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        phone: user.phone,
+        isVerified: user.isVerified,
+        isActive: user.isActive,
+        doctorStatus: doctorStatus
+      }
+    });
+  } catch (error) {
+    console.error('Fetch current user error:', error);
+    res.status(500).json({
+      message: 'Unable to retrieve current user',
+      error: error.message
     });
   }
 });

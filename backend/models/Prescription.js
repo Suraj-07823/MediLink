@@ -33,11 +33,11 @@ const prescriptionSchema = new mongoose.Schema({
   // Medicines prescribed
   medicines: [
     {
-      name: String,          // "Aspirin", "Antibiotics"
-      dosage: String,        // "500mg"
-      frequency: String,     // "twice a day"
-      duration: String,      // "7 days"
-      instructions: String   // "after meals", "with water"
+      name: { type: String, required: true },
+      dosage: { type: String, required: true },
+      frequency: { type: String, required: true },
+      duration: String,
+      instructions: String
     }
   ],
 
@@ -51,12 +51,6 @@ const prescriptionSchema = new mongoose.Schema({
   followUpDate: { 
     type: Date 
     // when patient should return for follow-up
-  },
-
-  // Timestamps
-  createdAt: { 
-    type: Date, 
-    default: Date.now 
   }
 }, { timestamps: true });
 

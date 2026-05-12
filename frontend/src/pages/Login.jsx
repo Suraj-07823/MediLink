@@ -20,26 +20,36 @@ export default function Login() {
       return;
     }
 
-    // Call login function from AuthContext
-    const response = await login(email, password);
+    try {
+      // Call login function from AuthContext
+      const response = await login(email, password);
 
-    if (response.success) {
-      // Login successful
-      const user = response.user;
-      
-      // Redirect based on role
-      if (user.role === 'patient') {
-        navigate('/patient/dashboard');
-      } else if (user.role === 'doctor') {
-        if (user.doctorStatus === 'approved') {
-          navigate('/doctor/dashboard');
+      if (response.success) {
+        // Login successful
+        const user = response.user;
+        
+        // Redirect based on role
+        if (user.role === 'patient') {
+          navigate('/patient/dashboard');
+        } else if (user.role === 'doctor') {
+          if (user.doctorStatus === 'approved') {
+            navigate('/doctor/dashboard');
+          } else {
+            alert(`Your doctor profile is ${user.doctorStatus}. Please wait for admin approval.`);
+            navigate('/');
+          }
+        } else if (user.role === 'admin') {
+          navigate('/admin/dashboard');
         } else {
-          alert(`Your doctor profile is ${user.doctorStatus}. Please wait for admin approval.`);
+          // Fallback for unknown roles
+          console.warn('Unknown user role:', user.role);
+          alert('Login successful, but unable to determine dashboard. Please contact support.');
           navigate('/');
         }
-      } else if (user.role === 'admin') {
-        navigate('/admin/dashboard');
       }
+    } catch (err) {
+      console.error('Login error:', err);
+      alert('An unexpected error occurred during login. Please try again.');
     }
     // Error is already set by login function and displayed below
   };
@@ -55,31 +65,37 @@ export default function Login() {
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Email input */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Email address</label>
+            <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">Email address</label>
             <input
+              id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
+              aria-label="Email address"
+              aria-describedby={error ? "login-error" : undefined}
               className="w-full px-4 py-3 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition"
             />
           </div>
 
           {/* Password input */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Password</label>
+            <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-2">Password</label>
             <input
+              id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
+              aria-label="Password"
+              aria-describedby={error ? "login-error" : undefined}
               className="w-full px-4 py-3 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition"
             />
           </div>
 
           {/* Error message */}
           {error && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-sm">
+            <div id="login-error" className="p-4 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-sm">
               ⚠️ {error}
             </div>
           )}
