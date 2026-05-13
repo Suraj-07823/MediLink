@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 
 export default function Register() {
   const navigate = useNavigate();
   const { register, registerDoctor, loading, error } = useAuth();
+  const isFirstRender = useRef(true);
 
   // Form state
   const [selectedRole, setSelectedRole] = useState('patient'); // 'patient' or 'doctor'
@@ -32,6 +34,10 @@ export default function Register() {
 
   // Clear form when role changes
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     setFormData({
       name: '',
       email: '',
@@ -97,20 +103,20 @@ const handleChange = (e) => {
 
     // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match');
+      toast.error('Passwords do not match');
       return;
     }
 
     // Validate password strength
     const passwordError = validatePassword(formData.password);
     if (passwordError) {
-      alert(passwordError);
+      toast.error(passwordError);
       return;
     }
 
     // Validate required fields
     if (!formData.name || !formData.email || !formData.phone || !formData.password) {
-      alert('Please fill all required fields');
+      toast.error('Please fill all required fields');
       return;
     }
 
@@ -128,13 +134,13 @@ const handleChange = (e) => {
       });
 
       if (response.success) {
-        alert('Registration successful! Welcome to MediLink.');
+        toast.success('Registration successful! Welcome to MediLink.');
         navigate('/');
       }
     } else if (selectedRole === 'doctor') {
       // Doctor registration
       if (!formData.speciality || !formData.qualification || !formData.regNumber) {
-        alert('Please fill all doctor fields');
+        toast.error('Please fill all doctor fields');
         return;
       }
 
@@ -158,7 +164,7 @@ const handleChange = (e) => {
       });
 
       if (response.success) {
-        alert('Registration successful! Awaiting admin approval.');
+        toast.success('Registration successful! Awaiting admin approval.');
         navigate('/');
       }
     }

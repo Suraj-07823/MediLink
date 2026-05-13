@@ -33,9 +33,9 @@ const prescriptionSchema = new mongoose.Schema({
   // Medicines prescribed
   medicines: [
     {
-      name: { type: String, required: true },
-      dosage: { type: String, required: true },
-      frequency: { type: String, required: true },
+      name: { type: String, required: false },
+      dosage: { type: String, required: false },
+      frequency: { type: String, required: false },
       duration: String,
       instructions: String
     }

@@ -46,11 +46,17 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('medilink_auth_user', JSON.stringify(userData));
         localStorage.setItem('medilink_auth_expiry', expiryTime.toString());
       } catch (err) {
-        localStorage.removeItem('medilink_auth_token');
-        localStorage.removeItem('medilink_auth_user');
-        localStorage.removeItem('medilink_auth_expiry');
-        delete axios.defaults.headers.common['Authorization'];
-        navigate('/login');
+        const isAuthError = err.response && (err.response.status === 401 || err.response.status === 403);
+
+        if (isAuthError) {
+          localStorage.removeItem('medilink_auth_token');
+          localStorage.removeItem('medilink_auth_user');
+          localStorage.removeItem('medilink_auth_expiry');
+          delete axios.defaults.headers.common['Authorization'];
+          navigate('/login');
+        } else {
+          setError('Unable to verify session. Please check your network connection.');
+        }
       } finally {
         setSessionLoading(false);
       }
@@ -74,12 +80,15 @@ export const AuthProvider = ({ children }) => {
 
       const { token: newToken, user: userData } = response.data;
 
+      // Decode JWT to get expiry
+      const payload = JSON.parse(atob(newToken.split('.')[1]));
+      const expiryTime = payload.exp * 1000;
+
       // Save to state
       setToken(newToken);
       setUser(userData);
 
-      // Save to localStorage with expiry (30 days from now)
-      const expiryTime = Date.now() + (30 * 24 * 60 * 60 * 1000); // 30 days
+      // Save to localStorage with expiry from JWT
       localStorage.setItem('medilink_auth_token', newToken);
       localStorage.setItem('medilink_auth_user', JSON.stringify(userData));
       localStorage.setItem('medilink_auth_expiry', expiryTime.toString());
@@ -109,12 +118,15 @@ export const AuthProvider = ({ children }) => {
 
       const { token: newToken, user: userData2 } = response.data;
 
+      // Decode JWT to get expiry
+      const payload = JSON.parse(atob(newToken.split('.')[1]));
+      const expiryTime = payload.exp * 1000;
+
       // Save to state
       setToken(newToken);
       setUser(userData2);
 
-      // Save to localStorage with expiry
-      const expiryTime = Date.now() + (30 * 24 * 60 * 60 * 1000); // 30 days
+      // Save to localStorage with expiry from JWT
       localStorage.setItem('medilink_auth_token', newToken);
       localStorage.setItem('medilink_auth_user', JSON.stringify(userData2));
       localStorage.setItem('medilink_auth_expiry', expiryTime.toString());
@@ -146,10 +158,13 @@ export const AuthProvider = ({ children }) => {
 
       const { token: newToken, user: userData } = response.data;
 
+      // Decode JWT to get expiry
+      const payload = JSON.parse(atob(newToken.split('.')[1]));
+      const expiryTime = payload.exp * 1000;
+
       setToken(newToken);
       setUser(userData);
 
-      const expiryTime = Date.now() + (30 * 24 * 60 * 60 * 1000); // 30 days
       localStorage.setItem('medilink_auth_token', newToken);
       localStorage.setItem('medilink_auth_user', JSON.stringify(userData));
       localStorage.setItem('medilink_auth_expiry', expiryTime.toString());
@@ -183,6 +198,7 @@ export const AuthProvider = ({ children }) => {
     user,
     token,
     loading,
+    sessionLoading,
     error,
     login,
     register,

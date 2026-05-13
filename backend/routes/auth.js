@@ -9,12 +9,12 @@ const { protect } = require('../middleware/auth');
 const router = express.Router();
 
 // Helper function to generate JWT token
-// Takes user ID and returns a signed JWT valid for 30 days
+// Takes user ID and returns a signed JWT valid for 1 hour
 const createToken = (id) => {
   return jwt.sign(
     { id }, 
     process.env.JWT_SECRET, 
-    { expiresIn: '30d' }
+    { expiresIn: '1h' }
   );
 };
 

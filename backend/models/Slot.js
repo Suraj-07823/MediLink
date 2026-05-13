@@ -45,14 +45,20 @@ const slotSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Validate that endTime is after startTime
+// Validate that endTime is after startTime, allowing cross-midnight ranges
 slotSchema.pre('validate', function(next) {
   if (this.startTime && this.endTime) {
     const start = this.startTime.split(':').map(Number);
     const end = this.endTime.split(':').map(Number);
     const startMinutes = start[0] * 60 + start[1];
-    const endMinutes = end[0] * 60 + end[1];
+    let endMinutes = end[0] * 60 + end[1];
     
+    // If end time is before or equal to start time, assume it's next day
+    if (endMinutes <= startMinutes) {
+      endMinutes += 24 * 60;
+    }
+    
+    // Only invalidate if still equal (zero-length slot)
     if (endMinutes <= startMinutes) {
       this.invalidate('endTime', 'End time must be after start time');
     }

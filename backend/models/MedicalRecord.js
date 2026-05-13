@@ -30,8 +30,8 @@ const medicalRecordSchema = new mongoose.Schema({
     name: String,
     phone: {
       type: String,
-      match: [/^[6-9]\d{9}$/, 'Phone number must be 10 digits starting with 6-9 (Indian format)']
-    },         // 10-digit Indian phone
+      match: [/^\+?91?[6-9]\d{9}$/, 'Phone number must be 10 digits starting with 6-9, optionally with +91 prefix (Indian format)']
+    },         // 10-digit Indian phone, optionally with country code
     relation: String       // "Mother", "Brother", "Spouse"
   },
 
@@ -45,6 +45,14 @@ const medicalRecordSchema = new mongoose.Schema({
     default: Date.now 
   }
 }, { timestamps: true });
+
+// Normalize phone number before saving
+medicalRecordSchema.pre('save', function(next) {
+  if (this.emergencyContact && this.emergencyContact.phone) {
+    this.emergencyContact.phone = this.emergencyContact.phone.replace(/\D/g, '');
+  }
+  next();
+});
 
 medicalRecordSchema.index({ patientId: 1 });
 

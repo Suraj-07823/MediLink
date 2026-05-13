@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ export default function Login() {
 
     // Validate inputs
     if (!email || !password) {
-      alert('Please fill in all fields');
+      toast.error('Please fill in all fields');
       return;
     }
 
@@ -35,7 +36,7 @@ export default function Login() {
           if (user.doctorStatus === 'approved') {
             navigate('/doctor/dashboard');
           } else {
-            alert(`Your doctor profile is ${user.doctorStatus}. Please wait for admin approval.`);
+            toast.error(`Your doctor profile is ${user.doctorStatus}. Please wait for admin approval.`);
             navigate('/');
           }
         } else if (user.role === 'admin') {
@@ -43,13 +44,13 @@ export default function Login() {
         } else {
           // Fallback for unknown roles
           console.warn('Unknown user role:', user.role);
-          alert('Login successful, but unable to determine dashboard. Please contact support.');
+          toast.error('Login successful, but unable to determine dashboard. Please contact support.');
           navigate('/');
         }
       }
     } catch (err) {
       console.error('Login error:', err);
-      alert('An unexpected error occurred during login. Please try again.');
+      toast.error('An unexpected error occurred during login. Please try again.');
     }
     // Error is already set by login function and displayed below
   };
@@ -72,7 +73,6 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
-              aria-label="Email address"
               aria-describedby={error ? "login-error" : undefined}
               className="w-full px-4 py-3 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition"
             />
@@ -87,7 +87,6 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              aria-label="Password"
               aria-describedby={error ? "login-error" : undefined}
               className="w-full px-4 py-3 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition"
             />
