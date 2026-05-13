@@ -30,7 +30,7 @@ const medicalRecordSchema = new mongoose.Schema({
     name: String,
     phone: {
       type: String,
-      match: [/^\+?91?[6-9]\d{9}$/, 'Phone number must be 10 digits starting with 6-9, optionally with +91 prefix (Indian format)']
+      match: [/^(?:\+91|91)?[6-9]\d{9}$/, 'Phone number must be 10 digits starting with 6-9, optionally prefixed with +91 or 91 (Indian format)']
     },         // 10-digit Indian phone, optionally with country code
     relation: String       // "Mother", "Brother", "Spouse"
   },

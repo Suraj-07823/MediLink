@@ -74,11 +74,15 @@ const handleChange = (e) => {
   // Password strength validation
   const validatePassword = (password) => {
     const minLength = 8;
+    const maxLength = 128;
     const hasUpperCase = /[A-Z]/.test(password);
     const hasLowerCase = /[a-z]/.test(password);
     const hasNumbers = /\d/.test(password);
     const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
 
+    if (password.length > maxLength) {
+      return 'Password must be at most 128 characters long';
+    }
     if (password.length < minLength) {
       return 'Password must be at least 8 characters long';
     }
@@ -133,9 +137,9 @@ const handleChange = (e) => {
         bloodGroup: formData.bloodGroup || null
       });
 
-      if (response.success) {
+      if (response && response.success) {
         toast.success('Registration successful! Welcome to MediLink.');
-        navigate('/');
+        navigate('/patient/dashboard');
       }
     } else if (selectedRole === 'doctor') {
       // Doctor registration
@@ -157,15 +161,15 @@ const handleChange = (e) => {
         clinicName: formData.clinicName,
         clinicAddress: {
           area: formData.clinicArea,
-          city: 'Nagpur',
+          city: formData.clinicCity,
           pincode: formData.clinicPincode
         },
         about: formData.about
       });
 
-      if (response.success) {
+      if (response && response.success) {
         toast.success('Registration successful! Awaiting admin approval.');
-        navigate('/');
+        navigate('/doctor/pending');
       }
     }
   };
@@ -346,6 +350,15 @@ const handleChange = (e) => {
                 name="clinicArea"
                 placeholder="Clinic area"
                 value={formData.clinicArea}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900"
+              />
+
+              <input
+                type="text"
+                name="clinicCity"
+                placeholder="Clinic city"
+                value={formData.clinicCity}
                 onChange={handleChange}
                 className="w-full px-4 py-3 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900"
               />

@@ -2,6 +2,23 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
+const decodeJwtExpiry = (token) => {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+
+    const payload = parts[1]
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
+    const padded = payload.padEnd(Math.ceil(payload.length / 4) * 4, '=');
+    const decoded = atob(padded);
+    const parsed = JSON.parse(decoded);
+    return parsed?.exp ? parsed.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+};
+
 // Create authentication context
 // This allows any component to access: user, token, login, logout functions
 const AuthContext = createContext();
@@ -81,8 +98,7 @@ export const AuthProvider = ({ children }) => {
       const { token: newToken, user: userData } = response.data;
 
       // Decode JWT to get expiry
-      const payload = JSON.parse(atob(newToken.split('.')[1]));
-      const expiryTime = payload.exp * 1000;
+      const expiryTime = decodeJwtExpiry(newToken) ?? Date.now() + 60 * 60 * 1000;
 
       // Save to state
       setToken(newToken);
@@ -119,8 +135,7 @@ export const AuthProvider = ({ children }) => {
       const { token: newToken, user: userData2 } = response.data;
 
       // Decode JWT to get expiry
-      const payload = JSON.parse(atob(newToken.split('.')[1]));
-      const expiryTime = payload.exp * 1000;
+      const expiryTime = decodeJwtExpiry(newToken) ?? Date.now() + 60 * 60 * 1000;
 
       // Save to state
       setToken(newToken);
@@ -159,8 +174,7 @@ export const AuthProvider = ({ children }) => {
       const { token: newToken, user: userData } = response.data;
 
       // Decode JWT to get expiry
-      const payload = JSON.parse(atob(newToken.split('.')[1]));
-      const expiryTime = payload.exp * 1000;
+      const expiryTime = decodeJwtExpiry(newToken) ?? Date.now() + 60 * 60 * 1000;
 
       setToken(newToken);
       setUser(userData);

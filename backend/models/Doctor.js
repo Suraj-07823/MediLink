@@ -23,8 +23,9 @@ const doctorSchema = new mongoose.Schema({
   },
   experience: { 
     type: Number, 
-    required: true 
-    // years of experience
+    default: 0,
+    min: 0
+    // years of experience; 0 is valid for newly qualified doctors
   },
   regNumber: { 
     type: String, 

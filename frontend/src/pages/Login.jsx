@@ -36,8 +36,9 @@ export default function Login() {
           if (user.doctorStatus === 'approved') {
             navigate('/doctor/dashboard');
           } else {
-            toast.error(`Your doctor profile is ${user.doctorStatus}. Please wait for admin approval.`);
-            navigate('/');
+            const statusMessage = user.doctorStatus ? `Your doctor profile is ${user.doctorStatus}. Please wait for admin approval.` : 'Your doctor profile is pending approval. Please wait for admin approval.';
+            toast.error(statusMessage);
+            navigate('/doctor/pending');
           }
         } else if (user.role === 'admin') {
           navigate('/admin/dashboard');

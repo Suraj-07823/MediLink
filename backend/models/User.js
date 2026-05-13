@@ -122,6 +122,13 @@ const userSchema = new mongoose.Schema({
     type: Boolean, 
     default: true 
     // account active or suspended
+  },
+  failedLoginCount: {
+    type: Number,
+    default: 0
+  },
+  lockedUntil: {
+    type: Date
   }
 }, { timestamps: true });
 

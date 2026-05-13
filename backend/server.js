@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const dotenv = require('dotenv');
 const connectDatabase = require('./config/db');
 
@@ -25,9 +26,10 @@ const MedicalRecord = require('./models/MedicalRecord');
 const app = express();
 
 // Middleware
-app.use(cors()); // Enable cross-origin requests for frontend
+app.use(cors({ origin: true, credentials: true })); // Enable cross-origin requests for frontend
 app.use(express.json()); // Parse JSON request bodies
 app.use(express.urlencoded({ extended: true })); // Parse form data
+app.use(cookieParser()); // Parse cookies for refresh token support
 
 // Connect to MongoDB database
 connectDatabase();
