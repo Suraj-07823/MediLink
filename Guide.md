@@ -1,272 +1,557 @@
-# MediLink Project Guide
+# MediLink — Project Guide
+
+> A role-based healthcare platform connecting patients and doctors with slot-based scheduling, QR/OTP check-in, digital prescriptions, and JWT authentication.
+
+**Developer:** Suraj Vishwakarma
+**GitHub:** [github.com/Suraj-07823](https://github.com/Suraj-07823)
+**LinkedIn:** [linkedin.com/in/suraj-vishwakarma-a281a6261](https://linkedin.com/in/suraj-vishwakarma-a281a6261)
+**Type:** B.Tech CSE Final Year Project · Startup Potential
+
+---
+
+## Table of Contents
+
+1. [Overview](#1-overview)
+2. [Tech Stack](#2-tech-stack)
+3. [System Architecture](#3-system-architecture)
+4. [Project Flow](#4-project-flow)
+5. [User Roles & Features](#5-user-roles--features)
+6. [Security & Auth Flow](#6-security--auth-flow)
+7. [Data Models](#7-data-models)
+8. [API Reference](#8-api-reference)
+9. [Environment Variables](#9-environment-variables)
+10. [CI/CD Pipeline](#10-cicd-pipeline)
+11. [Error Handling Strategy](#11-error-handling-strategy)
+12. [Logging Strategy](#12-logging-strategy)
+
+---
 
 ## 1. Overview
-MediLink is a healthcare platform with role-based access for patients, doctors, and admins. The project includes a React/Tailwind frontend, an Express/MongoDB backend, and security features like JWT authentication, refresh token rotation, account lockout, and encrypted medical data storage.
 
-## 2. Architecture
-The application follows a layered web architecture with explicit validation, security, and storage flows.
+MediLink is a full-stack healthcare platform with three user roles — **Patient**, **Doctor**, and **Admin**. It provides:
 
-```mermaid
-flowchart TB
-  subgraph frontend [Frontend]
-    A[React + Vite UI] --> B[Axios HTTP Client]
-    B --> C[/api/auth\n/api/patient\n/api/doctor\n/api/admin/]
-  end
+- Slot-based appointment booking
+- QR / OTP check-in on appointment day
+- Digital prescription upload and access (AWS S3)
+- Admin-gated doctor approval workflow
+- JWT access token + rotating refresh token authentication
+- Rate limiting, account lockout, and input validation
 
-  subgraph backend [Backend]
-    C --> D[Express Router Layer]
-    D --> X[Input Validation Middleware]\n    X --> E[Authentication / Authorization]
-    E --> L[Account Lockout Logic]
-    X --> F[Business Logic / Controllers]
-    F --> G[MongoDB Data Models]
-    F --> S[File Storage Service]\n    E --> H[JWT Access Token / Refresh Token]
-  end
+---
 
-  subgraph db [Database]
-    G --> I[(MongoDB)]
-    S --> J[(AWS S3 or object storage)]
-  end
+## 2. Tech Stack
 
-  subgraph infra [Infrastructure]
-    M[Docker / Docker Compose / ECS]
-    N[Nginx Reverse Proxy]
-    M --> frontend
-    M --> backend
-    M --> db
-    N --> frontend
-    N --> backend
-  end
+| Layer | Technology |
+|---|---|
+| Frontend | React.js + Vite |
+| Styling | Tailwind CSS |
+| Backend | Node.js + Express.js |
+| Database | MongoDB (Mongoose) |
+| Authentication | JWT (access token) + Refresh token (httpOnly cookie) |
+| Input Validation | Zod |
+| File Storage | AWS S3 |
+| Cloud Hosting | AWS EC2 |
+| Containers | Docker + Docker Compose |
+| Reverse Proxy | Nginx |
+| CI/CD | GitHub Actions |
+| Testing | Jest + Supertest |
+| Logging | Winston + Morgan |
+| Rate Limiting | express-rate-limit |
+
+---
+
+## 3. System Architecture
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                        Infrastructure                            │
+│   Nginx (reverse proxy + SSL)   ←→   Docker Compose             │
+│                        AWS EC2 (host)                            │
+│                                                                  │
+│  ┌─────────────────┐   ┌──────────────────────┐   ┌──────────┐  │
+│  │    Frontend      │   │       Backend         │   │   DB     │  │
+│  │                  │   │                       │   │          │  │
+│  │  React + Vite    │──▶│  Express Router       │──▶│ MongoDB  │  │
+│  │  Axios Client    │   │  Zod Validation       │   │          │  │
+│  │                  │   │  Auth + Rate Limiter  │   └──────────┘  │
+│  │  /api/auth       │   │  Account Lockout      │                  │
+│  │  /api/patient    │   │  Controllers          │──▶  AWS S3       │
+│  │  /api/doctor     │   │  JWT / Refresh Token  │  (prescriptions) │
+│  │  /api/admin      │   │  Winston Logging      │                  │
+│  └─────────────────┘   └──────────────────────┘                  │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-### Explanation
-- **Input validation middleware**: Uses Zod or Joi to validate request bodies before controller logic.
-- **Frontend**: React handles forms, role-based routing, and protected views.
-- **Backend**: Express routers enforce auth, rate limiting, validation, lockout, and business rules.
-- **Account lockout logic**: Prevents brute-force login by counting failed attempts and locking the account temporarily.
-- **Token security**: Access token is short-lived (`1h`), refresh token is long-lived and stored as a secure `httpOnly` cookie, not in localStorage.
-- **File storage**: Prescription files or uploads can be persisted in AWS S3 or any secure object storage and referenced from MongoDB.
-- **Encryption at rest**: Sensitive collections such as medical records and prescriptions should use database encryption-at-rest and optionally field-level encryption for critical fields.
-- **Infrastructure**: Docker or AWS ECS can orchestrate frontend/backend/db deployments.
+### Layer Breakdown
 
-## 3. Project Flow
-This section describes the main runtime flow.
+**Frontend** — React UI handles navigation, role-based dashboards, forms, and Axios HTTP calls to the backend API.
 
-```mermaid
-sequenceDiagram
-  participant U as User
-  participant F as Frontend
-  participant B as Backend
-  participant V as Validator
-  participant DB as MongoDB
-  participant S as S3
+**Backend** — Express routes pass through Zod validation → rate limiting → JWT auth middleware → role authorization → controllers → MongoDB.
 
-  U->>F: Open app / login/register
-  F->>B: POST /api/auth/login or /api/auth/register
-  B->>V: validate request body
-  V-->>B: validated request
-  B->>DB: validate user / create user
-  DB-->>B: response
-  B-->>F: access token + refresh token cookie
-  F->>U: show dashboard or pending state
+**Database** — MongoDB stores Users, Doctors, Appointments, Prescriptions, and Medical Records.
 
-  alt Doctor login and approval pending
-    F->>U: show pending screen
-  else Doctor approved
-    F->>U: show doctor dashboard
-  end
+**File Storage** — AWS S3 stores prescription PDFs uploaded by doctors. Signed URLs are returned to patients for secure access.
 
-  U->>F: book appointment / view records
-  F->>B: authenticated API calls
-  B->>B: authorization and lockout checks
-  B->>DB: read/write appointment or medical records
-  DB-->>B: return data
-  B-->>F: send data back
+**Infrastructure** — Docker Compose orchestrates frontend, backend, and MongoDB containers. Nginx acts as a reverse proxy with SSL termination. Hosted on AWS EC2.
 
-  alt prescription upload
-    F->>B: upload prescription file
-    B->>S: store file in S3
-    S-->>B: file URL
-    B->>DB: save prescription metadata
-  end
-end
+---
+
+## 4. Project Flow
+
+### Login / Register Flow
+
+```
+User
+ │
+ ├─▶ POST /api/auth/register or /api/auth/login
+ │        │
+ │        ▼
+ │   Zod validates input
+ │        │
+ │        ▼
+ │   Rate limiter check (express-rate-limit)
+ │        │
+ │        ▼
+ │   Account lockout check (loginAttempts, lockUntil)
+ │        │
+ │        ▼
+ │   MongoDB: validate credentials / create user
+ │        │
+ │        ├─▶ Issue access token (JWT, 15 min, returned in response body)
+ │        └─▶ Issue refresh token (JWT, 7d, set as httpOnly cookie)
+ │
+ ├─▶ Doctor? → show "Pending Approval" screen until admin approves
+ └─▶ Approved / Patient / Admin? → redirect to role dashboard
 ```
 
-### Explanation
-- **Validation first**: Requests are checked by middleware before controller logic.
-- **Auth flow**: Successful login returns a JWT and sets an `httpOnly` refresh token cookie.
-- **Doctor approval**: Doctors are redirected to pending status until admin approval.
-- **File storage**: Prescription files can move to S3, with metadata stored in MongoDB.
-- **Real-time updates**: If appointment status updates are needed in real time, the app can use polling or WebSocket notifications from backend to frontend.
+### Appointment Booking Flow
 
-## 4. CI/CD Flow
-A typical CI/CD process for MediLink on AWS.
-
-```mermaid
-flowchart TD
-  A[Developer Pushes Code] --> B[Source Control (Git)]
-  B --> C[CI Pipeline]
-  C --> D[Install Dependencies]
-  C --> E[Run Tests (Jest + Supertest)]
-  C --> F[Build Frontend & Backend]
-  C --> G[Security / Lint Checks]
-  C --> H[Build Docker Images]
-  H --> I[Push Images to ECR]
-  I --> J[Deploy to ECS / EC2]
-  J --> K[Environment-specific config: dev/staging/prod]
-  K --> L[Run Smoke Tests]
+```
+Patient selects doctor + slot
+ │
+ ▼
+POST /api/patient/appointments  (JWT required)
+ │
+ ▼
+Backend validates slot availability
+ │
+ ▼
+MongoDB: create Appointment document (status: pending)
+ │
+ ▼
+QR code / OTP generated and stored (hashed)
+ │
+ ▼
+Patient checks in on appointment day via POST /api/patient/checkin
+ │
+ ▼
+Backend verifies QR / OTP → sets checkedIn: true
+ │
+ ▼
+Doctor updates status → completed → uploads prescription to S3
 ```
 
-### Explanation
-- **Test framework**: Backend tests are implemented with Jest and Supertest; frontend tests can use Jest or React Testing Library.
-- **Docker build**: Builds separate frontend/backend images.
-- **Container registry**: Push built images to AWS ECR.
-- **Deployment**: Deploy containers to AWS ECS or EC2.
-- **Environment configs**: Use different `.env` values for dev, staging, and prod.
+---
 
-## 5. User Interaction
-MediLink has three main user roles with distinct interactions.
+## 5. User Roles & Features
 
 ### Patient
-- Register and login
-- Book appointments with doctors
-- View appointment history
-- Access medical records and prescriptions
+
+- Register, login, manage profile
+- Browse doctors by specialty
+- Book slot-based appointments
+- QR / OTP check-in on appointment day
+- View appointment history and status
+- Access digital prescriptions and medical records
 
 ### Doctor
-- Register and wait for admin approval
-- Manage availability and appointments
-- View patient details and upload prescriptions
-- Update appointment status
+
+- Register and await admin approval before dashboard access
+- Set availability and manage appointment slots
+- View patient details and history
+- Upload and issue digital prescriptions (stored on AWS S3)
+- Update appointment status (pending → confirmed → completed)
+- Participate in consultation workflows
 
 ### Admin
+
 - Approve or reject doctor registrations
-- Manage users, doctors, and appointments
-- Monitor system activity
-- Review audit logs for approvals and changes
+- Manage all users, doctors, and appointments
+- Monitor system health and flagged accounts
+- Full audit log: who approved whom, and when
+- Account lockout controls for repeated failed logins
 
-## 6. Security & Token Flow
-The auth flow uses a short-lived access token and a secure refresh token.
+---
 
-```mermaid
-flowchart LR
-  U[User] --> F[Frontend]
-  F --> B[Backend Auth]
-  B -->|access token| F
-  B -->|refresh token httpOnly cookie| F
-  F -->|protected request| B
-  B -->|verify access token| B
-  alt access token expired
-    F --> B: POST /api/auth/refresh
-    B -->|rotate refresh token| F
-    B -->|new access token| F
-  end
+## 6. Security & Auth Flow
+
+### Token Strategy
+
+| Token | Storage | TTL | Notes |
+|---|---|---|---|
+| Access Token | Memory (JS variable) | 15 minutes | Never in localStorage |
+| Refresh Token | httpOnly cookie | 7 days | Rotated on every use |
+
+### Flow
+
+```
+Frontend                           Backend
+   │                                  │
+   ├──POST /api/auth/login──────────▶│
+   │                                  ├─ Validate credentials
+   │                                  ├─ Check account lockout
+   │◀── access token (body) ─────────┤
+   │◀── refresh token (httpOnly) ────┤
+   │                                  │
+   ├── protected request + Bearer ──▶│
+   │                                  ├─ Verify access token
+   │◀── response ────────────────────┤
+   │                                  │
+   │  [access token expires]          │
+   ├──POST /api/auth/refresh ────────▶│
+   │                                  ├─ Verify refresh token
+   │                                  ├─ Rotate refresh token (invalidate old)
+   │◀── new access token (body) ─────┤
+   │◀── new refresh token (cookie) ──┤
 ```
 
-### Explanation
-- **Access Token**: Short-lived JWT used for API authorization.
-- **Refresh Token**: Stored securely as an `httpOnly`, `Secure` cookie and rotated on each refresh.
-- **LocalStorage**: Refresh tokens are not stored in localStorage for security reasons.
-- **Rate limiting**: `express-rate-limit` is applied to sensitive routes like login.
-- **Account lockout**: Tracks failed logins and temporarily locks the account after repeated failures.
-- **Encryption at rest**: Sensitive collections such as medical records and prescriptions should be protected with database encryption-at-rest and optionally field-level encryption.
+### Additional Security Measures
+
+- **Rate limiting** — `express-rate-limit` on all auth routes (e.g. max 10 requests / 15 min window)
+- **Account lockout** — 5 failed login attempts triggers a timed lockout stored in `loginAttempts` and `lockUntil` fields
+- **Input validation** — Zod schema validation on every route before hitting controllers. Returns 400 with field-level errors
+- **Refresh token hashing** — Refresh tokens are hashed before storage in MongoDB. Raw token is never persisted
+- **CORS** — Configured to allow only trusted origins
+- **Helmet.js** — HTTP security headers on all responses
+- **Data at rest** — Prescriptions stored in private S3 bucket. Access via signed URLs with short TTL
+
+---
 
 ## 7. Data Models
-Key collections and relationships.
 
 ### User
-- `name`, `email`, `phone`, `password`
-- `role`: `patient`, `doctor`, or `admin`
-- `isVerified`, `isActive`
-- `failedLoginCount`, `lockedUntil`
-- `speciality`, `qualification`, `experience`, `regNumber` for doctors
-- Relationship: a doctor has one `Doctor` profile, a patient may have one `MedicalRecord`
 
-### Doctor
-- `userId` → User
-- `speciality`, `qualification`, `experience`, `regNumber`
-- `consultationFee`, `clinicName`, `clinicAddress`
-- `status`: `pending` / `approved` / `rejected`
-
-### Appointment
-- `patientId` → User
-- `doctorId` → Doctor
-- `date`, `timeSlot`, `status`
-- `consultationReason`, `notes`, `qrCode`
-
-### Prescription
-- `appointmentId` → Appointment
-- `doctorId`, `patientId`
-- `medicines`, `instructions`
-- `fileUrl` for uploaded prescription files stored in S3 or object storage
-
-### MedicalRecord
-- `patientId` → User
-- `allergies`, `chronicDiseases`, `pastSurgeries`, `currentMedicines`
-- `emergencyContact`
-- `createdAt`, `updatedAt`
-
-## 8. Environment Variables
-Required env vars for development and deployment.
-
-```text
-PORT=5000
-NODE_ENV=development
-JWT_SECRET=your_jwt_secret
-REFRESH_SECRET=your_refresh_secret
-MONGO_URI=mongodb://localhost:27017/medilink
-CORS_ORIGIN=http://localhost:5173
-AWS_S3_BUCKET=your_s3_bucket_name
-AWS_ACCESS_KEY_ID=your_aws_key_id
-AWS_SECRET_ACCESS_KEY=your_aws_secret
-AWS_REGION=your_aws_region
-ECR_REPOSITORY=your_ecr_repo
-DATABASE_ENCRYPTION_KEY=optional_field_encryption_key
-```
-
-## 9. API Endpoints Reference
-Basic route table.
-
-| Route | Method | Auth Required | Roles | Description |
-|---|---|---|---|---|
-| `/api/auth/register` | POST | No | patient, admin | Register patient or admin user |
-| `/api/auth/register-doctor` | POST | No | doctor | Register a doctor for approval |
-| `/api/auth/login` | POST | No | all | Login and receive access + refresh tokens |
-| `/api/auth/refresh` | POST | No (cookie) | all | Refresh access token |
-| `/api/auth/logout` | POST | No (cookie) | all | Revoke refresh token and logout |
-| `/api/auth/me` | GET | Yes | all | Get current authenticated user |
-| `/api/doctors` | GET | Yes | all | List doctors |
-| `/api/appointments` | POST | Yes | patient | Book appointment |
-| `/api/appointments` | GET | Yes | patient, doctor | Fetch appointments |
-| `/api/prescriptions` | POST | Yes | doctor | Create prescription |
-| `/api/medical-records` | POST | Yes | patient, doctor | Create or update medical record |
-
-## 10. Error Handling Strategy
-The backend uses a global error handler and standardized response format.
-
-- **Validation errors**: return `400 Bad Request` with field-specific messages.
-- **Authentication/authorization errors**: return `401 Unauthorized` or `403 Forbidden`.
-- **Not found**: return `404 Not Found` for unknown routes or resources.
-- **Server errors**: return `500 Internal Server Error` with a generic message in production.
-- **Standard response format**:
-
-```json
+```js
 {
-  "message": "Error message",
-  "error": "detailed error info",
-  "fields": { "fieldName": "validation issue" }
+  _id: ObjectId,
+  name: String,
+  email: String (unique),
+  password: String (bcrypt hashed),
+  role: 'patient' | 'doctor' | 'admin',
+  loginAttempts: Number (default: 0),
+  lockUntil: Date,
+  refreshToken: String (hashed),
+  createdAt: Date,
+  updatedAt: Date
 }
 ```
 
-## 11. Logging & Audit
-Logging and audit strategy for healthcare security and compliance.
+### Doctor
 
-- **Request logging**: Use Morgan for HTTP request logging in development.
-- **Application logging**: Use Winston for structured logs, error tracking, and audit trails.
-- **Admin audit logs**: Track actions like doctor approval, role changes, and critical updates with timestamps and admin IDs.
-- **Security logs**: Capture failed login attempts, account lockouts, refresh token usage, and suspicious activity.
+```js
+{
+  _id: ObjectId,
+  userId: ObjectId (ref: User),
+  specialty: String,
+  licenseNumber: String,
+  approvalStatus: 'pending' | 'approved' | 'rejected',
+  availability: [
+    { day: String, slots: [String] }
+  ],
+  bio: String,
+  createdAt: Date
+}
+```
 
-## 12. How to Use This Guide
-- Use architecture diagrams to understand the system flow.
-- Use data model and API sections to connect frontend features with backend implementation.
-- Use CI/CD and env var sections for deployment planning.
-- Use error and logging sections to guide production hardening.
+### Appointment
+
+```js
+{
+  _id: ObjectId,
+  patientId: ObjectId (ref: User),
+  doctorId: ObjectId (ref: Doctor),
+  slotTime: Date,
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled',
+  qrCode: String,
+  otpHash: String,
+  checkedIn: Boolean (default: false),
+  notes: String,
+  createdAt: Date
+}
+```
+
+### Prescription
+
+```js
+{
+  _id: ObjectId,
+  appointmentId: ObjectId (ref: Appointment),
+  doctorId: ObjectId (ref: Doctor),
+  patientId: ObjectId (ref: User),
+  medicines: [
+    { name: String, dosage: String, duration: String }
+  ],
+  instructions: String,
+  fileUrl: String (AWS S3 signed URL),
+  createdAt: Date
+}
+```
+
+### AuditLog (Admin actions)
+
+```js
+{
+  _id: ObjectId,
+  adminId: ObjectId (ref: User),
+  action: String,         // e.g. 'APPROVE_DOCTOR'
+  targetId: ObjectId,     // ref to affected document
+  targetModel: String,    // 'Doctor' | 'User' | 'Appointment'
+  metadata: Object,       // extra context
+  createdAt: Date
+}
+```
+
+---
+
+## 8. API Reference
+
+### Auth Routes
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | `/api/auth/register` | — | Register new user |
+| POST | `/api/auth/login` | — | Login, returns JWT + sets httpOnly cookie |
+| POST | `/api/auth/refresh` | Cookie | Rotate refresh token, issue new access token |
+| POST | `/api/auth/logout` | JWT | Invalidate refresh token |
+
+### Patient Routes
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/patient/profile` | JWT (patient) | View own profile |
+| PUT | `/api/patient/profile` | JWT (patient) | Update own profile |
+| GET | `/api/patient/doctors` | JWT (patient) | Browse available doctors |
+| GET | `/api/patient/appointments` | JWT (patient) | List own appointments |
+| POST | `/api/patient/appointments` | JWT (patient) | Book an appointment |
+| DELETE | `/api/patient/appointments/:id` | JWT (patient) | Cancel appointment |
+| POST | `/api/patient/checkin` | JWT (patient) | QR / OTP check-in |
+| GET | `/api/patient/prescriptions` | JWT (patient) | View own prescriptions |
+
+### Doctor Routes
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/doctor/appointments` | JWT (doctor) | View scheduled appointments |
+| PATCH | `/api/doctor/appointments/:id` | JWT (doctor) | Update appointment status |
+| POST | `/api/doctor/prescriptions` | JWT (doctor) | Upload prescription (S3) |
+| GET | `/api/doctor/prescriptions` | JWT (doctor) | View issued prescriptions |
+| PUT | `/api/doctor/availability` | JWT (doctor) | Set available slots |
+| GET | `/api/doctor/patients/:id` | JWT (doctor) | View patient detail |
+
+### Admin Routes
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/admin/doctors` | JWT (admin) | List all doctor registrations |
+| PATCH | `/api/admin/doctors/:id/approve` | JWT (admin) | Approve or reject doctor |
+| GET | `/api/admin/users` | JWT (admin) | List all users |
+| DELETE | `/api/admin/users/:id` | JWT (admin) | Remove user account |
+| GET | `/api/admin/appointments` | JWT (admin) | View all appointments |
+| GET | `/api/admin/audit-logs` | JWT (admin) | View admin action history |
+
+---
+
+## 9. Environment Variables
+
+Create a `.env` file in `/backend`:
+
+```env
+# Server
+PORT=5000
+NODE_ENV=development
+
+# Database
+MONGO_URI=mongodb://localhost:27017/medilink
+
+# JWT
+JWT_SECRET=your_jwt_secret_here
+JWT_EXPIRES_IN=15m
+REFRESH_TOKEN_SECRET=your_refresh_secret_here
+REFRESH_TOKEN_EXPIRES=7d
+
+# AWS
+AWS_ACCESS_KEY_ID=your_aws_key
+AWS_SECRET_ACCESS_KEY=your_aws_secret
+AWS_REGION=ap-south-1
+S3_BUCKET_NAME=medilink-prescriptions
+
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX=10
+
+# CORS
+CLIENT_URL=http://localhost:5173
+```
+
+---
+
+## 10. CI/CD Pipeline
+
+Pipeline runs on every push to `main` via GitHub Actions.
+
+```
+Developer pushes to main / opens PR
+            │
+            ▼
+    GitHub Actions triggered
+            │
+     ┌──────┴───────┐
+     ▼              ▼
+  Install deps    Lint (ESLint)
+     │              │
+     └──────┬───────┘
+            ▼
+     Unit tests (Jest + Supertest)
+            │
+            ▼
+     Build frontend (Vite)
+            │
+            ▼
+     Docker image build (multi-stage)
+            │
+            ▼
+     Push to AWS ECR (tagged with commit SHA)
+            │
+            ▼
+     SSH into EC2 → docker compose up -d
+            │
+            ▼
+     Smoke test: GET /api/health
+            │
+     ┌──────┴───────┐
+     ▼              ▼
+  Pass: done    Fail: rollback to
+                previous ECR tag
+```
+
+### GitHub Actions Workflow Summary
+
+```yaml
+# .github/workflows/deploy.yml (summary)
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - Install dependencies
+      - Run ESLint
+      - Run Jest tests
+
+  build-and-deploy:
+    needs: test
+    steps:
+      - Build Docker images
+      - Push to AWS ECR
+      - SSH into EC2
+      - Pull and run latest images
+      - Health check + rollback on failure
+```
+
+---
+
+## 11. Error Handling Strategy
+
+All errors are caught by a global Express error handler and returned in a consistent format:
+
+```json
+{
+  "success": false,
+  "error": "Human-readable message",
+  "code": "ERROR_CODE"
+}
+```
+
+### Error Types
+
+| HTTP Status | Code | Cause |
+|---|---|---|
+| 400 | `VALIDATION_ERROR` | Zod schema violation — includes field-level detail |
+| 401 | `UNAUTHORIZED` | Missing, invalid, or expired access token |
+| 403 | `FORBIDDEN` | Valid token but insufficient role |
+| 404 | `NOT_FOUND` | Resource does not exist |
+| 409 | `CONFLICT` | Duplicate email, slot already booked, etc. |
+| 429 | `RATE_LIMITED` | Too many requests — includes `Retry-After` header |
+| 423 | `ACCOUNT_LOCKED` | Too many failed login attempts |
+| 500 | `INTERNAL_ERROR` | Unhandled exception — no internal detail leaked to client |
+
+### Global Error Handler (Express)
+
+```js
+app.use((err, req, res, next) => {
+  const status = err.status || 500;
+  const code = err.code || 'INTERNAL_ERROR';
+  const message = status === 500 ? 'Something went wrong' : err.message;
+
+  // Log full error internally
+  logger.error({ code, message: err.message, stack: err.stack });
+
+  res.status(status).json({ success: false, error: message, code });
+});
+```
+
+---
+
+## 12. Logging Strategy
+
+| Logger | Purpose |
+|---|---|
+| Morgan | HTTP request logs (method, route, status, response time) |
+| Winston | Application logs: errors, auth events, admin actions |
+
+### Log Levels
+
+```
+error   → unhandled exceptions, DB failures
+warn    → failed logins, rate limit hits, account lockouts
+info    → successful auth, appointment created, prescription uploaded
+debug   → detailed flow (dev only)
+```
+
+### Log Format (Winston)
+
+```json
+{
+  "level": "warn",
+  "message": "Failed login attempt",
+  "userId": "64abc...",
+  "ip": "103.x.x.x",
+  "timestamp": "2025-05-15T10:32:00Z"
+}
+```
+
+Logs are written to:
+- `logs/error.log` — errors only
+- `logs/combined.log` — all levels
+- Console in development
+
+---
+
+## Project Status
+
+| Phase | Description | Status |
+|---|---|---|
+| 1 | Auth system (register, login, JWT, refresh) | ✅ Complete |
+| 2 | Doctor registration + admin approval | ✅ Complete |
+| 3 | Appointment booking + slot management | 🔄 In Progress |
+| 4 | QR / OTP check-in | 🔄 In Progress |
+| 5 | Prescription upload (AWS S3) | ⏳ Planned |
+| 6 | Patient medical records | ⏳ Planned |
+| 7 | Docker + Nginx deployment | ⏳ Planned |
+| 8 | GitHub Actions CI/CD | ⏳ Planned |
+
+---
+
+*MediLink — Built by Suraj Vishwakarma | B.Tech CSE, Nagpur*
