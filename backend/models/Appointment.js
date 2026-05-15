@@ -19,7 +19,15 @@ const appointmentSchema = new mongoose.Schema({
   // Appointment details
   date: { 
     type: Date, 
-    required: true 
+    required: true,
+    set: (value) => {
+      const dateValue = new Date(value);
+      if (Number.isNaN(dateValue.getTime())) {
+        return value;
+      }
+      dateValue.setUTCHours(0, 0, 0, 0);
+      return dateValue;
+    }
   },
   timeSlot: { 
     type: String, 
@@ -63,6 +71,17 @@ const appointmentSchema = new mongoose.Schema({
     // timestamp when patient checked in (receptionist scanned QR)
   }
 }, { timestamps: true });
+
+appointmentSchema.pre('save', function(next) {
+  if (this.isModified('date') && this.date) {
+    const normalized = new Date(this.date);
+    if (!Number.isNaN(normalized.getTime())) {
+      normalized.setUTCHours(0, 0, 0, 0);
+      this.date = normalized;
+    }
+  }
+  next();
+});
 
 appointmentSchema.index({ patientId: 1, date: -1 });
 appointmentSchema.index({ doctorId: 1, date: -1 });

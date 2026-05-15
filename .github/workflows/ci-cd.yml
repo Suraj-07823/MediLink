@@ -31,9 +31,7 @@ jobs:
 
       - name: Run backend lint and tests
         working-directory: backend
-        run: |
-          npm install
-          echo "No tests configured yet"
+        run: echo "No tests configured yet"
 
       - name: Build Docker images
         run: |

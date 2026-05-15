@@ -315,10 +315,16 @@ Frontend                           Backend
 
 ## 8. API Reference
 
-### Auth Routes
+### System Routes
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
+| GET | `/api/health` | — | Health check for monitoring/deployment |
+
+### Auth Routes
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|
 | POST | `/api/auth/register` | — | Register new user |
 | POST | `/api/auth/login` | — | Login, returns JWT + sets httpOnly cookie |
 | POST | `/api/auth/refresh` | Cookie | Rotate refresh token, issue new access token |
@@ -386,8 +392,8 @@ AWS_REGION=ap-south-1
 S3_BUCKET_NAME=medilink-prescriptions
 
 # Rate Limiting
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX=10
+RATE_LIMIT_WINDOW_MS=3600000
+RATE_LIMIT_MAX=60
 
 # CORS
 CLIENT_URL=http://localhost:5173

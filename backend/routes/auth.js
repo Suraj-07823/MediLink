@@ -42,11 +42,14 @@ const refreshCookieOptions = {
   path: '/'
 };
 
-// Rate limiter for login attempts
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 login attempts per windowMs
-  message: 'Too many login attempts from this IP, please try again later.',
+const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 3600000;
+const RATE_LIMIT_MAX = parseInt(process.env.RATE_LIMIT_MAX, 10) || 60;
+
+// Rate limiter for auth endpoints
+const authLimiter = rateLimit({
+  windowMs: RATE_LIMIT_WINDOW_MS,
+  max: RATE_LIMIT_MAX,
+  message: 'Too many authentication requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -55,7 +58,7 @@ const loginLimiter = rateLimit({
 // POST /api/auth/register
 // Body: { name, email, phone, password, role, ...roleSpecificFields }
 // Returns: { token, user }
-router.post('/register', async (req, res) => {
+router.post('/register', authLimiter, async (req, res) => {
   try {
     const { name, email, phone, password, role, dateOfBirth, gender, bloodGroup, address } = req.body;
 
@@ -239,7 +242,7 @@ router.post('/register-doctor', async (req, res) => {
 // POST /api/auth/login
 // Body: { email, password }
 // Returns: { token, user } (works for all roles: patient, doctor, admin)
-router.post('/login', loginLimiter, async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -339,7 +342,7 @@ router.post('/login', loginLimiter, async (req, res) => {
 // POST /api/auth/refresh
 // Body: { refreshToken }
 // Returns: { token }
-router.post('/refresh', async (req, res) => {
+router.post('/refresh', authLimiter, async (req, res) => {
   try {
     const incomingRefreshToken = req.body.refreshToken || req.cookies?.refreshToken;
     if (!incomingRefreshToken) {
