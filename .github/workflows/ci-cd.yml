@@ -17,10 +17,6 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install backend dependencies
-        working-directory: backend
-        run: npm install
-
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm install
@@ -28,6 +24,10 @@ jobs:
       - name: Run frontend build
         working-directory: frontend
         run: npm run build
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm install
 
       - name: Run backend lint and tests
         working-directory: backend

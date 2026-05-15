@@ -88,6 +88,8 @@ appointmentSchema.index({ doctorId: 1, date: -1 });
 appointmentSchema.index({ status: 1 });
 appointmentSchema.index({ otp: 1, otpExpiry: 1 });
 // Prevent double-booking: unique combination of doctor, date, and timeSlot for active appointments only
+// IMPORTANT: existing deployments must drop the old unique index before applying this schema change.
+// Run `db.appointments.dropIndex({ doctorId: 1, date: 1, timeSlot: 1 })` then deploy and verify with `db.appointments.getIndexes()`.
 appointmentSchema.index({ doctorId: 1, date: 1, timeSlot: 1 }, { unique: true, partialFilterExpression: { status: { $ne: 'cancelled' } } });
 
 module.exports = mongoose.model('Appointment', appointmentSchema);
