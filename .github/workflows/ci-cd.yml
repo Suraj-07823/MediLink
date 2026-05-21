@@ -36,12 +36,12 @@ jobs:
         working-directory: backend
         run: echo "No tests configured yet"
 
-      # Docker validation build
-      - name: Build backend Docker image
-        run: docker build -t medilink-backend -f backend/Dockerfile backend
-
+      # Docker validation build - Build nginx BEFORE backend to catch frontend issues early
       - name: Build nginx Docker image
         run: docker build -t medilink-nginx -f nginx/Dockerfile .
+
+      - name: Build backend Docker image
+        run: docker build -t medilink-backend -f backend/Dockerfile backend
 
   deploy:
     needs: build
@@ -52,12 +52,10 @@ jobs:
     steps:
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v0.1.9
-
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-
           script: |
             set -e
 
