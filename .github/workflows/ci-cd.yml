@@ -36,7 +36,7 @@ jobs:
         working-directory: backend
         run: echo "No tests configured yet"
 
-      # Docker validation build - Build nginx BEFORE backend to catch frontend issues early
+      # Docker validation
       - name: Build nginx Docker image
         run: docker build -t medilink-nginx -f nginx/Dockerfile .
 
@@ -54,26 +54,28 @@ jobs:
         uses: appleboy/ssh-action@v0.1.9
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
+          username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
-            
-            # Create directory if it doesn't exist
-            mkdir -p /home/${{ secrets.EC2_USER }}/medilink
-            
-            cd /home/${{ secrets.EC2_USER }}/medilink
-            
+
+            # Clone repo if it doesn't exist yet
+            if [ ! -d "/home/ubuntu/medilink/.git" ]; then
+              git clone https://github.com/Suraj-07823/MediLink.git /home/ubuntu/medilink
+            fi
+
+            cd /home/ubuntu/medilink
+
             echo "Pulling latest code..."
             git pull origin main
-            
+
             echo "Stopping old containers..."
             docker compose down
-            
+
             echo "Building and starting containers..."
             docker compose up -d --build
-            
+
             echo "Removing unused Docker images..."
             docker image prune -f
-            
+
             echo "Deployment completed successfully!"
