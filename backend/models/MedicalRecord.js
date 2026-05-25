@@ -35,6 +35,15 @@ const medicalRecordSchema = new mongoose.Schema({
     relation: String       // "Mother", "Brother", "Spouse"
   },
 
+  // Timestamps
+  createdAt: { 
+    type: Date, 
+    default: Date.now 
+  },
+  updatedAt: { 
+    type: Date, 
+    default: Date.now 
+  }
 }, { timestamps: true });
 
 // Normalize phone number before saving

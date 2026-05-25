@@ -16,7 +16,7 @@ const createToken = (id) => {
   return jwt.sign(
     { id }, 
     process.env.JWT_SECRET, 
-    { expiresIn: '1h' }
+    { expiresIn: '30d' }
   );
 };
 
@@ -69,10 +69,10 @@ router.post('/register', authLimiter, async (req, res) => {
       });
     }
 
-    // Validate role - only patient and admin can register here
-    if (!['patient', 'admin'].includes(role)) {
+    // Only patients can self-register. Admin accounts are created manually in the database.
+    if (role !== 'patient') {
       return res.status(400).json({ 
-        message: 'Invalid role. Use /register-doctor for doctor registration.' 
+        message: 'Only patients can register here. Use /register-doctor for doctor registration.' 
       });
     }
 

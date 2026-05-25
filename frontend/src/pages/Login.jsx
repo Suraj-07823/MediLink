@@ -36,10 +36,9 @@ export default function Login() {
           if (user.doctorStatus === 'approved') {
             navigate('/doctor/dashboard');
           } else {
-            const statusMessage = user.doctorStatus ? `Your doctor profile is ${user.doctorStatus}. Please wait for admin approval.` : 'Your doctor profile is pending approval. Please wait for admin approval.';
-            toast.error(statusMessage);
-            navigate('/doctor/pending');
+            navigate('/doctor/pending');   // pending page will display the status message
           }
+        
         } else if (user.role === 'admin') {
           navigate('/admin/dashboard');
         } else {
@@ -125,12 +124,7 @@ export default function Login() {
           </Link>
         </p>
 
-        {/* Demo info */}
-        <div className="mt-8 p-4 bg-blue-50 rounded-2xl border border-blue-200">
-          <p className="text-sm text-blue-900 font-medium">Demo Credentials:</p>
-          <p className="text-xs text-blue-800 mt-2">Email: demo@medilink.com</p>
-          <p className="text-xs text-blue-800">Password: demo123</p>
-        </div>
+        
       </div>
     </div>
   );

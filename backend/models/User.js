@@ -54,63 +54,8 @@ const userSchema = new mongoose.Schema({
     // URL to photo (stored in cloud)
   },
 
-  // Doctor-specific fields
-  speciality: { 
-    type: String 
-    // "Cardiology", "ENT", "Dermatology", etc.
-  },
-  qualification: { 
-    type: String 
-    // "MBBS", "MD", "MS", etc.
-  },
-  experience: { 
-    type: Number 
-    // years of experience
-  },
-  regNumber: { 
-    type: String 
-    // medical council registration number
-  },
-  consultationFee: { 
-    type: Number 
-    // in rupees ₹
-  },
-  clinicName: { 
-    type: String 
-  },
-  clinicAddress: {
-    area: String,
-    city: { type: String, default: 'Nagpur' },
-    pincode: String
-  },
-  about: { 
-    type: String 
-    // doctor bio/introduction
-  },
-  documents: [
-    {
-      name: String, // "degree", "registration", etc.
-      url: String   // uploaded file URL
-    }
-  ],
-  doctorStatus: { 
-    type: String, 
-    enum: ['pending', 'approved', 'rejected'], 
-    default: 'pending' 
-    // admin must approve before doctor can accept patients
-  },
-  rejectionReason: { 
-    type: String 
-    // reason if rejected by admin
-  },
-  avgRating: { 
-    type: Number, 
-    default: 0 
-  },
-  totalReviews: { 
-    type: Number, 
-    default: 0 
-  },
+  // Patient-specific fields (keep only patient fields here).
+  // Doctor-specific profile data lives in backend/models/Doctor.js
 
   // Account verification & security
   isVerified: { 

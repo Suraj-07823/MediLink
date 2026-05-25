@@ -45,21 +45,10 @@ export default function PatientDashboard() {
       {/* Recent Activity */}
       <div className="mt-8 bg-white rounded-2xl p-6 shadow-sm border border-blue-100">
         <h3 className="font-semibold text-slate-800 mb-4">Recent Activity</h3>
-        <div className="space-y-3">
-          <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
-            <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-slate-800">Appointment with Dr. Smith</p>
-              <p className="text-xs text-slate-500">Tomorrow at 10:00 AM</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-            <div className="w-2 h-2 bg-green-600 rounded-full"></div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-slate-800">Prescription updated</p>
-              <p className="text-xs text-slate-500">Blood pressure medication renewed</p>
-            </div>
-          </div>
+        <div className="text-center py-8">
+          <div className="text-4xl mb-3">📋</div>
+          <p className="text-slate-500 text-sm">No activity yet.</p>
+          <p className="text-slate-400 text-xs mt-1">Book your first appointment to get started!</p>
         </div>
       </div>
     </div>

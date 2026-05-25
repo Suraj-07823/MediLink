@@ -43,12 +43,13 @@ function ProtectedRoute({ children, requiredRole = null }) {
 function AppContent() {
   const { sessionLoading } = useAuth();
 
+  // Show full-screen spinner while session is being verified
   if (sessionLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-100">
-        <div className="text-center p-6 bg-white rounded-3xl shadow-lg">
-          <div className="mx-auto mb-4 h-10 w-10 rounded-full border-4 border-slate-200 border-t-slate-800 animate-spin" role="status" aria-live="polite" aria-label="Checking your session"></div>
-          <p className="text-slate-700 font-medium">Checking your session…</p>
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-500 text-sm">Loading MediLink...</p>
         </div>
       </div>
     );

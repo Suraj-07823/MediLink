@@ -45,28 +45,10 @@ export default function AdminDashboard() {
       {/* Recent Activity */}
       <div className="mt-8 bg-white rounded-2xl p-6 shadow-sm border border-purple-100">
         <h3 className="font-semibold text-slate-800 mb-4">Recent Activity</h3>
-        <div className="space-y-3">
-          <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
-            <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-slate-800">New doctor registration</p>
-              <p className="text-xs text-slate-500">Dr. Sarah Johnson awaiting approval</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
-            <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-slate-800">Appointment booked</p>
-              <p className="text-xs text-slate-500">Patient John Doe with Dr. Smith</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-            <div className="w-2 h-2 bg-green-600 rounded-full"></div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-slate-800">System backup completed</p>
-              <p className="text-xs text-slate-500">Daily backup finished successfully</p>
-            </div>
-          </div>
+        <div className="text-center py-8">
+          <div className="text-4xl mb-3">📊</div>
+          <p className="text-slate-500 text-sm">No recent activity.</p>
+          <p className="text-slate-400 text-xs mt-1">Doctor registrations and bookings will appear here.</p>
         </div>
       </div>
     </div>

@@ -26,7 +26,7 @@ export default function DoctorDashboard() {
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-green-100">
           <div className="text-3xl mb-2">📅</div>
           <h3 className="font-semibold text-slate-800 mb-1">Today's Appointments</h3>
-          <p className="text-sm text-slate-500 mb-4">5 appointments scheduled</p>
+          <p className="text-sm text-slate-500 mb-4">No appointments today</p>
           <button className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition">
             View Schedule
           </button>
@@ -54,25 +54,10 @@ export default function DoctorDashboard() {
       {/* Upcoming Appointments */}
       <div className="mt-8 bg-white rounded-2xl p-6 shadow-sm border border-green-100">
         <h3 className="font-semibold text-slate-800 mb-4">Upcoming Appointments</h3>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-            <div>
-              <p className="text-sm font-medium text-slate-800">John Doe</p>
-              <p className="text-xs text-slate-500">Today at 10:00 AM</p>
-            </div>
-            <button className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition">
-              Start
-            </button>
-          </div>
-          <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-            <div>
-              <p className="text-sm font-medium text-slate-800">Jane Smith</p>
-              <p className="text-xs text-slate-500">Today at 11:30 AM</p>
-            </div>
-            <button className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition">
-              Start
-            </button>
-          </div>
+        <div className="text-center py-8">
+          <div className="text-4xl mb-3">📅</div>
+          <p className="text-slate-500 text-sm">No appointments yet.</p>
+          <p className="text-slate-400 text-xs mt-1">Patients will appear here once they book with you.</p>
         </div>
       </div>
     </div>
