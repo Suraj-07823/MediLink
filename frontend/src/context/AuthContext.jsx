@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
+
+// Session TTL used when JWT expiry isn't available (ms)
+const AUTH_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 const decodeJwtExpiry = (token) => {
   try {
@@ -38,6 +41,7 @@ export const AuthProvider = ({ children }) => {
   // State: error messages
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   // On app load, verify token with backend and restore session
   useEffect(() => {
@@ -48,39 +52,64 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
-      axios.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`;
+      // Check stored expiry before attempting verification
+      const expiryStr = localStorage.getItem('medilink_auth_expiry');
+      const expiryNum = expiryStr ? Number(expiryStr) : null;
+      if (expiryNum && Date.now() > expiryNum) {
+        // Session expired locally: clear stored session and return logged-out state
+        localStorage.removeItem('medilink_auth_token');
+        localStorage.removeItem('medilink_auth_user');
+        localStorage.removeItem('medilink_auth_expiry');
+        if (axios.defaults.headers && axios.defaults.headers.common && axios.defaults.headers.common['Authorization']) {
+          delete axios.defaults.headers.common['Authorization'];
+        }
+        setToken(null);
+        setUser(null);
+        setError(null);
+        setSessionLoading(false);
+        return;
+      }
+
       try {
-        const response = await axios.get('/api/auth/me');
+        const response = await axios.get('/api/auth/me', {
+          headers: { Authorization: `Bearer ${savedToken}` }
+        });
         const userData = response.data.user;
 
         setToken(savedToken);
         setUser(userData);
         setError(null);
 
-        // Renew localStorage expiry for 30 days from now
-        const expiryTime = Date.now() + (30 * 24 * 60 * 60 * 1000);
-        localStorage.setItem('medilink_auth_token', savedToken);
+        // Derive expiry from the saved JWT (fall back to AUTH_TOKEN_TTL_MS)
+        const expiryTime = decodeJwtExpiry(savedToken) ?? Date.now() + AUTH_TOKEN_TTL_MS;
         localStorage.setItem('medilink_auth_user', JSON.stringify(userData));
         localStorage.setItem('medilink_auth_expiry', expiryTime.toString());
-      } catch (err) {
-        const isAuthError = err.response && (err.response.status === 401 || err.response.status === 403);
 
-        if (isAuthError) {
-          localStorage.removeItem('medilink_auth_token');
-          localStorage.removeItem('medilink_auth_user');
-          localStorage.removeItem('medilink_auth_expiry');
+        // Set global Authorization header for subsequent requests
+        axios.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`;
+      } catch (err) {
+        const msg = err.response?.data?.message || err.message || 'Unable to verify session';
+        setError(msg);
+
+        // Clear session storage
+        localStorage.removeItem('medilink_auth_token');
+        localStorage.removeItem('medilink_auth_user');
+        localStorage.removeItem('medilink_auth_expiry');
+
+        // Remove global header only if it exists
+        if (axios.defaults.headers && axios.defaults.headers.common && axios.defaults.headers.common['Authorization']) {
           delete axios.defaults.headers.common['Authorization'];
-          navigate('/login');
-        } else {
-          setError('Unable to verify session. Please check your network connection.');
         }
+
+        // Navigate to login if not already on the login page
+        if (location.pathname !== '/login') navigate('/login');
       } finally {
         setSessionLoading(false);
       }
     };
 
     verifySession();
-  }, [navigate]);
+  }, [navigate, location]);
 
   // ========== LOGIN FUNCTION ==========
   // POST request to /api/auth/login with email and password
@@ -94,25 +123,8 @@ export const AuthProvider = ({ children }) => {
         email,
         password
       });
-
-      const { token: newToken, user: userData } = response.data;
-
-      // Decode JWT to get expiry
-      const expiryTime = decodeJwtExpiry(newToken) ?? Date.now() + 60 * 60 * 1000;
-
-      // Save to state
-      setToken(newToken);
-      setUser(userData);
-
-      // Save to localStorage with expiry from JWT
-      localStorage.setItem('medilink_auth_token', newToken);
-      localStorage.setItem('medilink_auth_user', JSON.stringify(userData));
-      localStorage.setItem('medilink_auth_expiry', expiryTime.toString());
-
-      // Set default Authorization header
-      axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-
-      return { success: true, user: userData };
+      handleAuthResponse(response.data);
+      return { success: true, user: response.data.user };
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'Login failed';
       setError(errorMsg);
@@ -131,25 +143,8 @@ export const AuthProvider = ({ children }) => {
       setError(null);
 
       const response = await axios.post('/api/auth/register', userData);
-
-      const { token: newToken, user: userData2 } = response.data;
-
-      // Decode JWT to get expiry
-      const expiryTime = decodeJwtExpiry(newToken) ?? Date.now() + 60 * 60 * 1000;
-
-      // Save to state
-      setToken(newToken);
-      setUser(userData2);
-
-      // Save to localStorage with expiry from JWT
-      localStorage.setItem('medilink_auth_token', newToken);
-      localStorage.setItem('medilink_auth_user', JSON.stringify(userData2));
-      localStorage.setItem('medilink_auth_expiry', expiryTime.toString());
-
-      // Set Authorization header
-      axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-
-      return { success: true, user: userData2 };
+      handleAuthResponse(response.data);
+      return { success: true, user: response.data.user };
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'Registration failed';
       setError(errorMsg);
@@ -171,21 +166,8 @@ export const AuthProvider = ({ children }) => {
         doctorData
       );
 
-      const { token: newToken, user: userData } = response.data;
-
-      // Decode JWT to get expiry
-      const expiryTime = decodeJwtExpiry(newToken) ?? Date.now() + 60 * 60 * 1000;
-
-      setToken(newToken);
-      setUser(userData);
-
-      localStorage.setItem('medilink_auth_token', newToken);
-      localStorage.setItem('medilink_auth_user', JSON.stringify(userData));
-      localStorage.setItem('medilink_auth_expiry', expiryTime.toString());
-
-      axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-
-      return { success: true, user: userData };
+      handleAuthResponse(response.data);
+      return { success: true, user: response.data.user };
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'Doctor registration failed';
       setError(errorMsg);
@@ -193,6 +175,19 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Centralized post-auth handler: sets token/user state, localStorage, and axios header
+  const handleAuthResponse = (data) => {
+    const { token: newToken, user: userData } = data;
+    const expiryTime = decodeJwtExpiry(newToken) ?? Date.now() + AUTH_TOKEN_TTL_MS;
+    setToken(newToken);
+    setUser(userData);
+    setError(null);
+    localStorage.setItem('medilink_auth_token', newToken);
+    localStorage.setItem('medilink_auth_user', JSON.stringify(userData));
+    localStorage.setItem('medilink_auth_expiry', expiryTime.toString());
+    axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
   };
 
   // ========== LOGOUT FUNCTION ==========

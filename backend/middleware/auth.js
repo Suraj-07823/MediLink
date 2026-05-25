@@ -31,6 +31,15 @@ const protect = async (req, res, next) => {
       });
     }
 
+    // Server-side token revocation check: if user.tokenInvalidBefore is set and the
+    // token's issued-at time is before that timestamp, reject the token.
+    if (req.user.tokenInvalidBefore) {
+      const issuedAtMs = decoded.iat * 1000; // jwt iat is in seconds
+      if (issuedAtMs < req.user.tokenInvalidBefore.getTime()) {
+        return res.status(401).json({ message: 'Token revoked. Please login again.' });
+      }
+    }
+
     if (!req.user.isActive) {
       return res.status(403).json({ 
         message: 'Your account has been suspended' 

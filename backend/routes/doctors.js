@@ -1,6 +1,6 @@
 const express = require('express');
 const Doctor = require('../models/Doctor');
-const protect = require('../config/auth');
+const { protect } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -14,9 +14,7 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', protect, async (req, res) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ message: 'Not authorized' });
-  }
+  if (req.user.role !== 'admin') return res.status(403).json({ message: 'Not authorized' });
   try {
     const doctor = await Doctor.create(req.body);
     res.status(201).json(doctor);

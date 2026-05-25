@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+import Input from '../components/ui/Input';
+import Button from '../components/ui/Button';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -64,49 +66,16 @@ export default function Login() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Email input */}
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">Email address</label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
-              aria-describedby={error ? "login-error" : undefined}
-              className="w-full px-4 py-3 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition"
-            />
-          </div>
+          <Input id="email" label="Email address" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <Input id="password" label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
 
-          {/* Password input */}
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-2">Password</label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              aria-describedby={error ? "login-error" : undefined}
-              className="w-full px-4 py-3 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition"
-            />
-          </div>
-
-          {/* Error message */}
           {error && (
             <div id="login-error" className="p-4 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-sm">
               ⚠️ {error}
             </div>
           )}
 
-          {/* Submit button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-slate-900 text-white py-3 rounded-2xl font-semibold hover:bg-slate-700 disabled:bg-slate-400 transition duration-200"
-          >
-            {loading ? 'Signing in...' : 'Sign in'}
-          </button>
+          <Button type="submit" className="w-full" disabled={loading}>{loading ? 'Signing in...' : 'Sign in'}</Button>
         </form>
 
         {/* Divider */}

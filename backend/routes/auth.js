@@ -1,51 +1,13 @@
 const express = require('express');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const mongoose = require('mongoose');
 const rateLimit = require('express-rate-limit');
-const User = require('../models/User');
-const Doctor = require('../models/Doctor');
-const RefreshToken = require('../models/RefreshToken');
 const { protect } = require('../middleware/auth');
+const authController = require('../controllers/authController');
 
 const router = express.Router();
-
-// Helper function to generate JWT token
-// Takes user ID and returns a signed JWT valid for 1 hour
-const createToken = (id) => {
-  return jwt.sign(
-    { id }, 
-    process.env.JWT_SECRET, 
-    { expiresIn: '30d' }
-  );
-};
-
-// Helper function to generate refresh token
-const createRefreshToken = (userId) => {
-  const refreshToken = jwt.sign(
-    { userId },
-    process.env.REFRESH_SECRET || process.env.JWT_SECRET,
-    { expiresIn: '30d' }
-  );
-  return refreshToken;
-};
-
-const verifyRefreshToken = (token) => {
-  return jwt.verify(token, process.env.REFRESH_SECRET || process.env.JWT_SECRET);
-};
-
-const refreshCookieOptions = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict',
-  maxAge: 30 * 24 * 60 * 60 * 1000,
-  path: '/'
-};
 
 const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 3600000;
 const RATE_LIMIT_MAX = parseInt(process.env.RATE_LIMIT_MAX, 10) || 60;
 
-// Rate limiter for auth endpoints
 const authLimiter = rateLimit({
   windowMs: RATE_LIMIT_WINDOW_MS,
   max: RATE_LIMIT_MAX,
@@ -54,78 +16,13 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// ========== REGISTER ==========
-// POST /api/auth/register
-// Body: { name, email, phone, password, role, ...roleSpecificFields }
-// Returns: { token, user }
-router.post('/register', authLimiter, async (req, res) => {
-  try {
-    const { name, email, phone, password, role, dateOfBirth, gender, bloodGroup, address } = req.body;
-
-    // Validate required fields
-    if (!name || !email || !phone || !password || !role) {
-      return res.status(400).json({ 
-        message: 'Please provide: name, email, phone, password, role' 
-      });
-    }
-
-    // Only patients can self-register. Admin accounts are created manually in the database.
-    if (role !== 'patient') {
-      return res.status(400).json({ 
-        message: 'Only patients can register here. Use /register-doctor for doctor registration.' 
-      });
-    }
-
-    // Check if user already exists with this email
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(409).json({ 
-        message: 'Email already registered. Please use another email or login.' 
-      });
-    }
-
-    // Hash password with bcryptjs (10 salt rounds = high security)
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create new user document
-    const newUser = new User({
-      name,
-      email,
-      phone,
-      password: hashedPassword,
-      role,
-      dateOfBirth,
-      gender,
-      bloodGroup,
-      address
-    });
-
-    // Save user to database
-    await newUser.save();
-
-    // Generate JWT token
-    const token = createToken(newUser._id);
-
-    // Return token and user info (NOT password)
-    res.status(201).json({
-      message: 'Registration successful',
-      token,
-      user: {
-        id: newUser._id,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role,
-        phone: newUser.phone
-      }
-    });
-  } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({ 
-      message: 'Registration failed', 
-      error: error.message 
-    });
-  }
-});
+// Auth routes delegate to controller (non-breaking)
+router.post('/register', authLimiter, authController.register);
+router.post('/register-doctor', authController.registerDoctor);
+router.post('/login', authLimiter, authController.login);
+router.post('/refresh', authLimiter, authController.refresh);
+router.get('/me', protect, authController.me);
+router.post('/logout', authController.logout);
 
 // ========== DOCTOR REGISTRATION ==========
 // POST /api/auth/register-doctor
@@ -431,6 +328,11 @@ router.post('/logout', async (req, res) => {
   try {
     const incomingRefreshToken = req.body.refreshToken || req.cookies?.refreshToken;
     if (incomingRefreshToken) {
+      // If we have a stored refresh token, set tokenInvalidBefore on the user
+      const stored = await RefreshToken.findOne({ token: incomingRefreshToken });
+      if (stored && stored.userId) {
+        await User.findByIdAndUpdate(stored.userId, { tokenInvalidBefore: new Date() });
+      }
       await RefreshToken.findOneAndDelete({ token: incomingRefreshToken });
     }
 

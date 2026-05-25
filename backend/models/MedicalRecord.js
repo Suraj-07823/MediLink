@@ -2,6 +2,15 @@ const mongoose = require('mongoose');
 
 // MedicalRecord model stores patient's medical history
 // Each patient has ONE medical record (one-to-one relationship)
+// Utility: normalize phone numbers to digits; preserve Indian country code 91 when present
+function normalizePhone(phone) {
+  if (!phone) return phone;
+  const digits = String(phone).replace(/\D/g, '');
+  const last10 = digits.slice(-10);
+  if (digits.length === 10) return last10;
+  if (digits.length > 10 && digits.startsWith('91')) return '91' + last10;
+  return last10;
+}
 const medicalRecordSchema = new mongoose.Schema({
   // Patient reference
   patientId: { 
@@ -30,8 +39,15 @@ const medicalRecordSchema = new mongoose.Schema({
     name: String,
     phone: {
       type: String,
-      match: [/^[6-9]\d{9}$/, 'Phone number must be a 10-digit Indian number starting with 6-9']
-    },         // normalized 10-digit Indian phone number
+      validate: {
+        validator: function(v) {
+          if (!v) return true;
+          const norm = normalizePhone(v);
+          return /^(?:\d{10}|91\d{10})$/.test(norm);
+        },
+        message: 'Phone number must be a 10-digit Indian number, optionally prefixed with country code 91'
+      }
+    },         // normalized 10-digit Indian phone number or 91-prefixed
     relation: String       // "Mother", "Brother", "Spouse"
   },
 
@@ -49,8 +65,7 @@ const medicalRecordSchema = new mongoose.Schema({
 // Normalize phone number before saving
 medicalRecordSchema.pre('save', function(next) {
   if (this.emergencyContact && this.emergencyContact.phone) {
-    const digits = this.emergencyContact.phone.replace(/\D/g, '');
-    this.emergencyContact.phone = digits.slice(-10);
+    this.emergencyContact.phone = normalizePhone(this.emergencyContact.phone);
   }
   next();
 });

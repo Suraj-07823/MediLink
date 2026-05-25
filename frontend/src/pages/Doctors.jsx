@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import Card from '../components/ui/Card';
+import Button from '../components/ui/Button';
 
 export default function Doctors() {
   const [doctors, setDoctors] = useState([]);
@@ -19,7 +21,7 @@ export default function Doctors() {
       <h2 className="text-3xl font-bold">Available doctors</h2>
       <div className="grid gap-6 md:grid-cols-2">
         {doctors.map((doctor) => (
-          <div key={doctor._id} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <Card key={doctor._id} className="">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <h3 className="text-xl font-semibold text-slate-900">{doctor.name}</h3>
@@ -34,9 +36,11 @@ export default function Doctors() {
               ))}
             </div>
             <div className="mt-6">
-              <Link to={`/booking/${doctor._id}`} className="inline-flex rounded-full bg-slate-900 px-5 py-3 text-white hover:bg-slate-700">Book slot</Link>
+              <Link to={`/booking/${doctor._id}`}>
+                <Button>Book slot</Button>
+              </Link>
             </div>
-          </div>
+          </Card>
         ))}
       </div>
     </div>

@@ -20,7 +20,7 @@
                         │   ┌─────────────────────────────────────────────┐   │
                         │   │         Security Group (Firewall)           │   │
                         │   │   ✅ Port 80  — HTTP  — 0.0.0.0/0          │   │
-                        │   │   ✅ Port 443 — HTTPS — 0.0.0.0/0          │   │
+                        │   │   ⚠️ Port 443 — HTTPS — NOT CONFIGURED (see notes)
                         │   │   ✅ Port 22  — SSH   — My IP only         │   │
                         │   └──────────────────┬──────────────────────────┘   │
                         │                      │                              │
@@ -75,6 +75,58 @@
                         │   🔐 IAM    — Role-based EC2 access to S3           │
                         └─────────────────────────────────────────────────────┘
 ```
+
+                        ## 🔒 HTTPS / TLS Notes (current status & how-to)
+
+                        Current status: the project `nginx/nginx.conf` in this repo listens on port 80 only (HTTP). HTTPS (port 443) is not configured in the current Nginx container, so the security-group entry for port 443 above is marked `NOT CONFIGURED` to avoid confusion.
+
+                        Options to enable HTTPS (pick one):
+
+                        1) Let's Encrypt (Certbot) on EC2 (recommended for single-VM setups)
+                           - Certificate files (privkey/fullchain) will be stored on the EC2 instance under `/etc/letsencrypt/live/<your-domain>/`.
+                           - Automation: install `certbot` and use `certbot --nginx` or `certbot certonly` + `systemd`/cron to run `certbot renew` and `nginx -s reload` on success.
+                           - Example command (one-time obtain): `sudo certbot --nginx -d medilink.in -d www.medilink.in`
+
+                        2) AWS Certificate Manager (ACM) + Load Balancer (recommended for production on AWS)
+                           - Provision certificates in ACM and reference the certificate ARN on an Application Load Balancer (ALB) or CloudFront distribution.
+                           - Credentials / ARNs: store ACM certificate ARNs and IAM roles as secrets in your deployment documentation or GitHub Secrets; do NOT store private keys in the repo.
+                           - ACM will auto-renew certificates; no instance-level cert files are required.
+
+                        Minimal Nginx SSL server block (if using cert files on the instance):
+
+                        ```
+                        server {
+                          listen 80;
+                          server_name medilink.in www.medilink.in;
+                          # Redirect all HTTP to HTTPS
+                          return 301 https://$host$request_uri;
+                        }
+
+                        server {
+                          listen 443 ssl http2;
+                          server_name medilink.in www.medilink.in;
+
+                          ssl_certificate /etc/letsencrypt/live/medilink.in/fullchain.pem;
+                          ssl_certificate_key /etc/letsencrypt/live/medilink.in/privkey.pem;
+                          ssl_protocols TLSv1.2 TLSv1.3;
+                          ssl_prefer_server_ciphers on;
+                          ssl_ciphers 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:...';
+
+                          location /api/ { proxy_pass http://backend:5000/api/; }
+                          location / { root /usr/share/nginx/html; try_files $uri $uri/ /index.html; }
+                        }
+                        ```
+
+                        Notes on redirect strategy:
+                        - For a single-VM deployment using Nginx, implement the `listen 80` server block above that issues a 301 to HTTPS.
+                        - For AWS deployments behind an ALB, terminate TLS at the ALB and forward plain HTTP to the backend; in that case configure the ALB to handle redirects and add the ACM cert to the ALB listener.
+
+                        Renewal automation:
+                        - With Certbot: add a cron or systemd timer that runs `certbot renew --quiet --deploy-hook "nginx -s reload"` daily. Certbot will renew only when necessary.
+                        - With ACM: certificates auto-renew; verify ALB listeners still reference the correct ARN after rotation.
+
+                        If you want, I can: (A) add a commented SSL server block to `nginx/nginx.conf` (disabled by default), or (B) provision a Let's Encrypt cert and update Nginx automatically — tell me which approach you prefer.
+
 
 ---
 

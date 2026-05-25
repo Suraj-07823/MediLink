@@ -52,15 +52,21 @@ slotSchema.pre('validate', function(next) {
     const end = this.endTime.split(':').map(Number);
     const startMinutes = start[0] * 60 + start[1];
     let endMinutes = end[0] * 60 + end[1];
-    
-    // If end time is before or equal to start time, assume it's next day
-    if (endMinutes <= startMinutes) {
+
+    // If times are exactly equal -> zero-length slot (reject)
+    if (endMinutes === startMinutes) {
+      this.invalidate('endTime', 'End time must be after start time (zero-length slots are not allowed)');
+      return next();
+    }
+
+    // If end time is before start time, treat it as next day (allow cross-midnight)
+    if (endMinutes < startMinutes) {
       endMinutes += 24 * 60;
     }
-    
-    // Only invalidate if still equal (zero-length slot)
+    // Final safety check: if endMinutes is not greater than startMinutes, invalidate
     if (endMinutes <= startMinutes) {
       this.invalidate('endTime', 'End time must be after start time');
+      return next();
     }
   }
   next();

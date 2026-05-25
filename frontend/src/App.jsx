@@ -10,6 +10,10 @@ import AdminLayout from './layouts/AdminLayout';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Doctors from './pages/Doctors';
+import Booking from './pages/Booking';
+import Prescription from './pages/Prescription';
+import CheckIn from './pages/CheckIn';
 
 // --- Dashboard imports ---
 import PatientDashboard from './pages/dashboards/PatientDashboard';
@@ -61,6 +65,9 @@ function AppContent() {
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+        <Route path="/doctors" element={<Doctors />} />
+        <Route path="/booking/:doctorId" element={<Booking />} />
+        <Route path="/checkin" element={<CheckIn />} />
 
       {/* Patient routes */}
       <Route
@@ -73,6 +80,10 @@ function AppContent() {
       >
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<PatientDashboard />} />
+        <Route path="find-doctors" element={<Doctors />} />
+        <Route path="book/:doctorId" element={<Booking />} />
+        <Route path="prescriptions" element={<Prescription />} />
+        <Route path="appointments" element={<PatientDashboard />} />
       </Route>
 
       {/* Doctor routes */}

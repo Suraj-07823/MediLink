@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+import Input from '../components/ui/Input';
+import Button from '../components/ui/Button';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -210,36 +212,11 @@ const handleChange = (e) => {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Common fields */}
-          <input
-            type="text"
-            name="name"
-            placeholder="Full name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-3 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900"
-          />
+          <Input name="name" placeholder="Full name" value={formData.name} onChange={handleChange} required />
 
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-3 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900"
-          />
+          <Input name="email" type="email" placeholder="Email" value={formData.email} onChange={handleChange} required />
 
-          <input
-            type="tel"
-            name="phone"
-            placeholder="Phone (10 digits)"
-            value={formData.phone}
-            onChange={handleChange}
-            required
-            pattern="\d{10}"
-            className="w-full px-4 py-3 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900"
-          />
+          <Input name="phone" type="tel" placeholder="Phone (10 digits)" value={formData.phone} onChange={handleChange} required />
 
           {/* Patient-specific fields */}
           {selectedRole === 'patient' && (
@@ -384,25 +361,9 @@ const handleChange = (e) => {
           )}
 
           {/* Password fields (common) */}
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-3 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900"
-          />
+              <Input name="password" type="password" placeholder="Password" value={formData.password} onChange={handleChange} required />
 
-          <input
-            type="password"
-            name="confirmPassword"
-            placeholder="Confirm password"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-3 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900"
-          />
+          <Input name="confirmPassword" type="password" placeholder="Confirm password" value={formData.confirmPassword} onChange={handleChange} required />
 
           {/* Error message */}
           {error && (
@@ -412,13 +373,7 @@ const handleChange = (e) => {
           )}
 
           {/* Submit button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-slate-900 text-white py-3 rounded-2xl font-semibold hover:bg-slate-700 disabled:bg-slate-400 transition"
-          >
-            {loading ? 'Creating account...' : 'Create account'}
-          </button>
+          <Button type="submit" className="w-full" disabled={loading}>{loading ? 'Creating account...' : 'Create account'}</Button>
         </form>
 
         {/* Login link */}
