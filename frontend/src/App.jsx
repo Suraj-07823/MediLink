@@ -20,6 +20,7 @@ import PatientDashboard from './pages/dashboards/PatientDashboard';
 import DoctorDashboard from './pages/dashboards/DoctorDashboard';
 import DoctorPending from './pages/dashboards/DoctorPending';
 import AdminDashboard from './pages/dashboards/AdminDashboard';
+import AdminDoctors from './pages/dashboards/AdminDoctors';
 
 // ProtectedRoute: blocks access if not authenticated or wrong role
 function ProtectedRoute({ children, requiredRole = null }) {
@@ -111,6 +112,7 @@ function AppContent() {
       >
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboard />} />
+        <Route path="doctors" element={<AdminDoctors />} />
       </Route>
 
       {/* 404 fallback */}

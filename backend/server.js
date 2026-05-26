@@ -9,10 +9,10 @@ dotenv.config();
 
 // Import routes
 const authRoutes = require('./routes/auth');
+const adminRoutes = require('./routes/admin');
 // Will import more routes as we build them
 // const patientRoutes = require('./routes/patient');
 // const doctorRoutes = require('./routes/doctor');
-// const adminRoutes = require('./routes/admin');
 
 // Import models (ensures they're registered with MongoDB)
 const User = require('./models/User');
@@ -36,9 +36,9 @@ connectDatabase();
 
 // ========== ROUTES ==========
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 // app.use('/api/patient', patientRoutes);
 // app.use('/api/doctor', doctorRoutes);
-// app.use('/api/admin', adminRoutes);
 
 // ========== HEALTH CHECK ==========
 // Simple endpoint to verify backend is running
