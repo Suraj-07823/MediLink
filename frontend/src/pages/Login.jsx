@@ -9,92 +9,150 @@ export default function Login() {
   const navigate = useNavigate();
   const { login, loading, error } = useAuth();
 
-  // Form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate inputs
     if (!email || !password) {
       toast.error('Please fill in all fields');
       return;
     }
 
     try {
-      // Call login function from AuthContext
       const response = await login(email, password);
 
       if (response.success) {
-        // Login successful
         const user = response.user;
         
-        // Redirect based on role
         if (user.role === 'patient') {
           navigate('/patient/dashboard');
         } else if (user.role === 'doctor') {
-          if (user.doctorStatus === 'approved') {
-            navigate('/doctor/dashboard');
-          } else {
-            navigate('/doctor/pending');   // pending page will display the status message
-          }
-        
+          navigate(user.doctorStatus === 'approved' ? '/doctor/dashboard' : '/doctor/pending');
         } else if (user.role === 'admin') {
           navigate('/admin/dashboard');
         } else {
-          // Fallback for unknown roles
           console.warn('Unknown user role:', user.role);
-          toast.error('Login successful, but unable to determine dashboard. Please contact support.');
+          toast.error('Login successful, but unable to determine dashboard.');
           navigate('/');
         }
       }
     } catch (err) {
       console.error('Login error:', err);
-      toast.error('An unexpected error occurred during login. Please try again.');
+      toast.error('An unexpected error occurred during login.');
     }
-    // Error is already set by login function and displayed below
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-700 flex items-center justify-center px-4">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8">
-        {/* Header */}
-        <h1 className="text-4xl font-bold text-slate-900 mb-2">Welcome Back</h1>
-        <p className="text-slate-600 mb-8">Log in to access MediLink</p>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <Input id="email" label="Email address" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <Input id="password" label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-
-          {error && (
-            <div id="login-error" className="p-4 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-sm">
-              ⚠️ {error}
-            </div>
-          )}
-
-          <Button type="submit" className="w-full" disabled={loading}>{loading ? 'Signing in...' : 'Sign in'}</Button>
-        </form>
-
-        {/* Divider */}
-        <div className="my-6 flex items-center gap-3">
-          <div className="flex-1 h-px bg-slate-300"></div>
-          <span className="text-slate-500 text-sm">or</span>
-          <div className="flex-1 h-px bg-slate-300"></div>
-        </div>
-
-        {/* Registration link */}
-        <p className="text-center text-slate-600">
-          Don't have an account?{' '}
-          <Link to="/register" className="text-slate-900 font-semibold hover:underline">
-            Create one
+    <div className="min-h-screen bg-slate-50">
+      {/* Header */}
+      <header className="bg-white border-b border-slate-100">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center">
+          <Link to="/" className="text-base font-bold text-slate-900 hover:text-slate-600 transition-colors">
+            ← Back
           </Link>
-        </p>
+        </div>
+      </header>
 
-        
-      </div>
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+
+          {/* Left — messaging */}
+          <div className="hidden lg:block">
+            <h1 className="text-4xl font-bold text-slate-900 leading-tight">
+              Welcome<br />back to<br />MediLink
+            </h1>
+            <p className="mt-5 text-lg text-slate-500 leading-relaxed">
+              Sign in with your email to access your appointments, prescriptions, and medical records.
+            </p>
+            <div className="mt-12 space-y-4">
+              <div className="flex gap-3">
+                <span className="text-2xl">📅</span>
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">Manage appointments</p>
+                  <p className="text-xs text-slate-500">Book, reschedule, or cancel anytime</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <span className="text-2xl">💊</span>
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">Digital prescriptions</p>
+                  <p className="text-xs text-slate-500">Access prescriptions from your doctors instantly</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <span className="text-2xl">📋</span>
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">Medical records</p>
+                  <p className="text-xs text-slate-500">All your health info in one secure place</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right — form */}
+          <div>
+            <div className="bg-white rounded-2xl border border-slate-100 p-8 shadow-sm">
+              <h2 className="text-2xl font-bold text-slate-900 mb-1">Sign in</h2>
+              <p className="text-sm text-slate-500 mb-6">Enter your email and password to continue</p>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <Input
+                  id="email"
+                  label="Email address"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  required
+                />
+                <Input
+                  id="password"
+                  label="Password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                />
+
+                {error && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                    ⚠️ {error}
+                  </div>
+                )}
+
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={loading}
+                  role="patient"
+                  size="lg"
+                >
+                  {loading ? 'Signing in...' : 'Sign in'}
+                </Button>
+              </form>
+
+              {/* Link to register */}
+              <p className="mt-6 text-center text-sm text-slate-600">
+                Don't have an account?{' '}
+                <Link to="/register" className="font-semibold text-blue-600 hover:text-blue-700 transition-colors">
+                  Create one
+                </Link>
+              </p>
+            </div>
+
+            {/* Demo info */}
+            <div className="mt-8 p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700">
+              <p className="font-semibold mb-2">Demo credentials</p>
+              <p className="text-xs leading-relaxed">
+                <span className="font-mono">demo@test.com</span> / <span className="font-mono">demo123</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

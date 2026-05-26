@@ -1,27 +1,64 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 export default function TopNav({ title, links = [], role = 'patient' }) {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
+  const location = useLocation();
 
-  const roleColors = {
-    patient: 'bg-blue-600 hover:bg-blue-700',
-    doctor: 'bg-green-600 hover:bg-green-700',
-    admin: 'bg-purple-600 hover:bg-purple-700'
-  };
+  const accent = {
+    patient: 'border-blue-600',
+    doctor:  'border-green-600',
+    admin:   'border-violet-600',
+  }[role] || 'border-slate-900';
+
+  const activeColor = {
+    patient: 'text-blue-600',
+    doctor:  'text-green-600',
+    admin:   'text-violet-600',
+  }[role] || 'text-slate-900';
 
   return (
-    <nav className={`px-6 py-4 flex items-center justify-between text-white ${roleColors[role] || roleColors.patient}`}>
-      <div className="flex items-center gap-4">
-        <Link to={`/${role}/dashboard`} className="text-xl font-bold hover:opacity-90">{title}</Link>
-      </div>
+    <header className={`bg-white border-b-2 ${accent} sticky top-0 z-40 shadow-sm`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+        {/* Brand */}
+        <Link to={`/${role}/dashboard`} className="text-base font-bold text-slate-900 tracking-tight shrink-0">
+          {title}
+        </Link>
 
-      <div className="flex items-center gap-4">
-        {links.map((l) => (
-          <Link key={l.to} to={l.to} className="text-sm hover:underline">{l.label}</Link>
-        ))}
-        <button onClick={logout} className="ml-4 bg-white text-current px-4 py-1.5 rounded-full text-sm font-medium">Logout</button>
+        {/* Nav links (hidden on mobile) */}
+        {links.length > 0 && (
+          <nav className="hidden md:flex items-center gap-1">
+            {links.map((l) => {
+              const isActive = location.pathname === l.to;
+              return (
+                <Link
+                  key={l.to}
+                  to={l.to}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors
+                    ${isActive ? `${activeColor} bg-slate-50` : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'}`}
+                >
+                  {l.label}
+                </Link>
+              );
+            })}
+          </nav>
+        )}
+
+        {/* Right side */}
+        <div className="flex items-center gap-3 shrink-0">
+          {user && (
+            <span className="hidden sm:block text-xs text-slate-500 font-medium truncate max-w-[140px]">
+              {user.name}
+            </span>
+          )}
+          <button
+            onClick={logout}
+            className="text-xs font-semibold text-slate-600 hover:text-slate-900 border border-slate-200 hover:border-slate-300 px-3 py-1.5 rounded-lg transition-colors bg-white"
+          >
+            Logout
+          </button>
+        </div>
       </div>
-    </nav>
+    </header>
   );
 }

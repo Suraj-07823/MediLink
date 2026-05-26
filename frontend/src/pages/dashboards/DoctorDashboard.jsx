@@ -12,52 +12,61 @@ export default function DoctorDashboard() {
     }
   }, [user, navigate]);
 
+  const actions = [
+    { icon: '📅', title: "Today's Schedule", desc: 'View and manage today\\'s appointments', href: '/doctor/schedule' },
+    { icon: '👥', title: 'My Patients', desc: 'View patient history and records', href: '/doctor/patients' },
+    { icon: '🗓️', title: 'Manage Schedule', desc: 'Update your availability', href: '/doctor/schedule' },
+    { icon: '👤', title: 'My Profile', desc: 'Edit profile and clinic details', href: '/doctor/profile' },
+  ];
+
   return (
-    <div>
-      <h2 className="text-3xl font-bold text-slate-800 mb-2">
-        Welcome back, Dr. {user?.name}! 👋
-      </h2>
-      <p className="text-slate-500 mb-8">
-        Manage your appointments and patient care from your dashboard.
-      </p>
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-green-600 to-green-500 rounded-2xl p-8 text-white">
+        <p className="text-sm text-green-100 mb-1">Welcome back</p>
+        <h1 className="text-3xl sm:text-4xl font-bold mb-2">Hi, Dr. {user?.name}! 👋</h1>
+        <p className="text-green-100 max-w-xl">Manage your appointments, patients, and practice in one place.</p>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Today's Appointments */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-green-100">
-          <div className="text-3xl mb-2">📅</div>
-          <h3 className="font-semibold text-slate-800 mb-1">Today's Appointments</h3>
-          <p className="text-sm text-slate-500 mb-4">No appointments today</p>
-          <button className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition">
-            View Schedule
+      {/* Quick actions grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {actions.map(({ icon, title, desc, href }) => (
+          <button
+            key={title}
+            onClick={() => navigate(href)}
+            className="bg-white border border-slate-200 rounded-2xl p-6 hover:border-green-300 hover:shadow-md transition-all text-left group"
+          >
+            <div className="text-3xl mb-3 group-hover:scale-110 transition-transform">{icon}</div>
+            <h3 className="font-semibold text-slate-900 mb-1">{title}</h3>
+            <p className="text-sm text-slate-500">{desc}</p>
           </button>
-        </div>
+        ))}
+      </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-green-100">
-          <div className="text-3xl mb-2">👥</div>
-          <h3 className="font-semibold text-slate-800 mb-1">My Patients</h3>
-          <p className="text-sm text-slate-500 mb-4">Manage patient records and history</p>
-          <button className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition">
-            View Patients
-          </button>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-green-100">
-          <div className="text-3xl mb-2">📊</div>
-          <h3 className="font-semibold text-slate-800 mb-1">Analytics</h3>
-          <p className="text-sm text-slate-500 mb-4">View your practice statistics</p>
-          <button className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition">
-            View Reports
-          </button>
+      {/* Setup reminder */}
+      <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6">
+        <div className="flex gap-4">
+          <span className="text-2xl">⚙️</span>
+          <div>
+            <h3 className="font-semibold text-amber-900 mb-1">Complete your profile</h3>
+            <p className="text-sm text-amber-700 mb-4">Add clinic details and consultation hours so patients can book appointments with you.</p>
+            <button
+              onClick={() => navigate('/doctor/profile')}
+              className="text-sm font-semibold text-amber-700 hover:text-amber-800 underline"
+            >
+              Update profile →
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Upcoming Appointments */}
-      <div className="mt-8 bg-white rounded-2xl p-6 shadow-sm border border-green-100">
-        <h3 className="font-semibold text-slate-800 mb-4">Upcoming Appointments</h3>
-        <div className="text-center py-8">
-          <div className="text-4xl mb-3">📅</div>
-          <p className="text-slate-500 text-sm">No appointments yet.</p>
-          <p className="text-slate-400 text-xs mt-1">Patients will appear here once they book with you.</p>
+      {/* Today's appointments */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-6">
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">Today's Appointments</h2>
+        <div className="text-center py-12">
+          <p className="text-4xl mb-3">📅</p>
+          <p className="text-slate-600 font-medium mb-1">No appointments today</p>
+          <p className="text-sm text-slate-500">You're all set for today</p>
         </div>
       </div>
     </div>
