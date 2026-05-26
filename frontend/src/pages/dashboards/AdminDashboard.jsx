@@ -44,13 +44,13 @@ export default function AdminDashboard() {
       {/* System status */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { label: 'Total Doctors', value: '0', color: 'green' },
-          { label: 'Total Patients', value: '0', color: 'blue' },
-          { label: 'Today\'s Appointments', value: '0', color: 'amber' },
-        ].map(({ label, value, color }) => (
-          <div key={label} className={`bg-${color}-50 border border-${color}-200 rounded-2xl p-6`}>
-            <p className={`text-sm text-${color}-700 font-medium`}>{label}</p>
-            <p className={`text-3xl font-bold text-${color}-600 mt-2`}>{value}</p>
+          { label: 'Total Doctors', value: '0', wrapper: 'bg-emerald-50 border-emerald-200', labelText: 'text-emerald-700', valueText: 'text-emerald-600' },
+          { label: 'Total Patients', value: '0', wrapper: 'bg-sky-50 border-sky-200', labelText: 'text-sky-700', valueText: 'text-sky-600' },
+          { label: 'Today\'s Appointments', value: '0', wrapper: 'bg-amber-50 border-amber-200', labelText: 'text-amber-700', valueText: 'text-amber-600' },
+        ].map(({ label, value, wrapper, labelText, valueText }) => (
+          <div key={label} className={`${wrapper} rounded-2xl p-6`}>
+            <p className={`text-sm ${labelText} font-medium`}>{label}</p>
+            <p className={`text-3xl font-bold ${valueText} mt-2`}>{value}</p>
           </div>
         ))}
       </div>

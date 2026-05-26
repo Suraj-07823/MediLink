@@ -95,12 +95,12 @@ export default function Home() {
           {/* Right — feature cards */}
           <div className="space-y-4">
             {[
-              { icon: '📅', color: 'blue',   title: 'Book appointments',    desc: 'Search by speciality or area. See real-time slot availability.' },
-              { icon: '📱', color: 'green',  title: 'QR check-in',          desc: 'Receive a QR code on WhatsApp. Scan at the clinic — no queue.' },
-              { icon: '💊', color: 'purple', title: 'Digital prescriptions', desc: 'Doctor writes your prescription digitally. Access it anytime.' },
-            ].map(({ icon, color, title, desc }) => (
-              <div key={title} className={`bg-white border border-${color}-100 rounded-2xl p-5 flex gap-4 shadow-sm`}>
-                <div className={`w-10 h-10 bg-${color}-50 rounded-xl flex items-center justify-center text-lg shrink-0`}>
+              { icon: '📅', title: 'Book appointments', desc: 'Search by speciality or area. See real-time slot availability.', wrapper: 'border-sky-100', badge: 'bg-sky-50', iconWrapper: 'bg-sky-50' },
+              { icon: '📱', title: 'QR check-in', desc: 'Receive a QR code on WhatsApp. Scan at the clinic — no queue.', wrapper: 'border-emerald-100', badge: 'bg-emerald-50', iconWrapper: 'bg-emerald-50' },
+              { icon: '💊', title: 'Digital prescriptions', desc: 'Doctor writes your prescription digitally. Access it anytime.', wrapper: 'border-violet-100', badge: 'bg-violet-50', iconWrapper: 'bg-violet-50' },
+            ].map(({ icon, title, desc, wrapper, iconWrapper }) => (
+              <div key={title} className={`bg-white border ${wrapper} rounded-2xl p-5 flex gap-4 shadow-sm`}>
+                <div className={`${iconWrapper} w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0`}>
                   {icon}
                 </div>
                 <div>

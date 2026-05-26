@@ -81,6 +81,7 @@ function AppContent() {
       >
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<PatientDashboard />} />
+        <Route path="doctors" element={<Doctors />} />
         <Route path="find-doctors" element={<Doctors />} />
         <Route path="book/:doctorId" element={<Booking />} />
         <Route path="prescriptions" element={<Prescription />} />
