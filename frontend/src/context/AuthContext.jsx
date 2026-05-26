@@ -109,7 +109,9 @@ export const AuthProvider = ({ children }) => {
     };
 
     verifySession();
-  }, [navigate, location]);
+    // Only verify the session once when the app loads.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ========== LOGIN FUNCTION ==========
   // POST request to /api/auth/login with email and password

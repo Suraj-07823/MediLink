@@ -62,7 +62,7 @@ async function registerDoctor(req, res) {
 		}
 
 		const hashedPassword = await bcrypt.hash(password, 10);
-		const newUser = new User({ name, email, phone, password: hashedPassword, role: 'doctor', speciality, qualification, experience, regNumber, consultationFee, clinicName, clinicAddress, about });
+		const newUser = new User({ name, email, phone, password: hashedPassword, role: 'doctor' });
 		await newUser.save({ session });
 
 		const doctorProfile = new Doctor({ userId: newUser._id, speciality, qualification, experience, regNumber, consultationFee, clinicName, clinicAddress, about, status: 'pending' });
