@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "jetro": {
+      "type": "stdio",
+      "command": "${USERPROFILE}\\.jetro\\runtime\\node-win32-x64.exe",
+      "args": [
+        "${USERPROFILE}\\.jetro\\mcp-server\\index.js"
+      ],
+      "env": {
+        "JET_WORKSPACE": "<path-to-workspace>",
+        "JET_API_URL": "https://api.jetro.ai",
+        "PATH": "${PATH};${USERPROFILE}\\.jetro\\runtime"
+      }
+    }
+  }
+}

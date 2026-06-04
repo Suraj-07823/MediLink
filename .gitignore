@@ -9,6 +9,7 @@ yarn-debug.log*
 yarn-error.log*
 coverage
 .vscode
+.mcp.json
 start.md
 SETUP.md
 All_DOC.md

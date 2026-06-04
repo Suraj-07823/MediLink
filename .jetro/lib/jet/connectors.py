@@ -73,11 +73,30 @@ def use(slug, **params):
     try:
         spec_obj = importlib.util.spec_from_file_location(
             f"jet_connector_{slug}", client_path)
-        if spec_obj is None:
-            raise RuntimeError(f"Failed to create module spec for slug '{slug}': {client_path}")
+    except (FileNotFoundError, OSError) as e:
+        raise RuntimeError(f"Failed to load connector client spec for slug '{slug}': {client_path}: {e}") from e
+
+    if spec_obj is None:
+        raise RuntimeError(f"Failed to create module spec for slug '{slug}': {client_path}")
+
+    try:
         mod = importlib.util.module_from_spec(spec_obj)
         spec_obj.loader.exec_module(mod)
+    except SyntaxError as e:
+        raise RuntimeError(f"Syntax error in connector module for slug '{slug}': {client_path}: {e}") from e
+    except ImportError as e:
+        raise RuntimeError(f"Import error in connector module for slug '{slug}': {client_path}: {e}") from e
     except Exception as e:
-        raise RuntimeError(f"Failed to load connector module for slug '{slug}': {e}") from e
+        raise RuntimeError(f"Failed to execute connector module for slug '{slug}': {client_path}: {e}") from e
 
-    return mod.Client(config=config, params=resolved, credential=credential)
+    # Check that Client class exists
+    if not hasattr(mod, 'Client'):
+        raise AttributeError(f"Connector module for slug '{slug}' has no 'Client' class: {client_path}")
+
+    # Instantiate Client with error context
+    try:
+        return mod.Client(config=config, params=resolved, credential=credential)
+    except TypeError as e:
+        raise RuntimeError(f"Failed to instantiate Client for slug '{slug}': {e}. Config: {config}, Params: {resolved}") from e
+    except Exception as e:
+        raise RuntimeError(f"Failed to instantiate Client for slug '{slug}': {e}") from e
