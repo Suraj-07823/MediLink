@@ -162,12 +162,10 @@
              └──────────────────┘
 
   Secrets stored in GitHub:
-  • EC2_HOST           → EC2 Public IP
+  • EC2_HOST           → EC2 public IP or hostname
   • EC2_SSH_KEY        → Private key (.pem)
   • EC2_USER           → ubuntu
-  • AWS_ACCESS_KEY_ID  → AWS credentials
-  • AWS_SECRET_ACCESS_KEY
-  • AWS_REGION         → ap-south-1
+  • NOTE: AWS credentials are not required by the current CI/CD deployment workflow.
 ```
 
 ---
@@ -204,12 +202,10 @@
 │        (.github/workflows/deploy.yml)                                   │
 │                                                                         │
 │   Repository Secrets used:                                              │
-│        EC2_HOST            → 13.127.14.68                               │
+│        EC2_HOST            → <EC2_PUBLIC_IP> or hostname                 │
 │        EC2_SSH_KEY         → private key (.pem file contents)           │
 │        EC2_USER            → ubuntu                                     │
-│        AWS_ACCESS_KEY_ID   → AWS credentials                            │
-│        AWS_SECRET_ACCESS_KEY                                            │
-│        AWS_REGION          → ap-south-1                                 │
+│        NOTE: AWS credentials are not used by the current CI/CD deploy.   │
 └───────────────────────────────┬─────────────────────────────────────────┘
                                 │
                                 │  GitHub Actions runner starts
@@ -221,9 +217,9 @@
 │        actions/checkout@v3                                              │
 │        pulls latest code into runner environment                        │
 │                                                                         │
-│   7. Step: Run tests (if configured)                                    │
-│        npm test / lint checks                                           │
-│        pipeline fails here if tests break → code never reaches server  │
+│   7. Step: Run tests (placeholder)                                      │
+│        no test framework is currently configured in root/backend/frontend │
+│        future test commands: npm test, npm run test:unit, npm run test:e2e │
 │                                                                         │
 │   8. Step: Setup SSH                                                    │
 │        loads EC2_SSH_KEY secret                                         │
@@ -231,7 +227,7 @@
 │        sets permissions chmod 400                                       │
 │                                                                         │
 │   9. Step: SSH into EC2 & Deploy                                        │
-│        ssh -i key ubuntu@13.127.14.68                                   │
+│        ssh -i key ubuntu@<EC2_PUBLIC_IP>                                │
 │        cd ~/MediLink                                                    │
 │        git pull origin main          ← pulls latest code on server     │
 │        docker-compose up --build -d  ← rebuilds & restarts containers  │
@@ -273,15 +269,16 @@
 │        backend   → Up (connected to mongo by service name)              │
 │        nginx     → Up (serving frontend + proxying API)                 │
 │                                                                         │
-│   14. New code is LIVE on http://13.127.14.68                           │
-│        Zero manual steps. Zero downtime during rebuild.                 │
+│   14. New code is LIVE on http://<EC2_PUBLIC_IP>                        │
+│        Minimal downtime during rebuild (~10-30 seconds).               │
+│        (True zero-downtime requires blue-green or rolling updates.)    │
 └─────────────────────────────────────────────────────────────────────────┘
                                 │
                                 │  HTTP Port 80
                                 ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                         END USER / BROWSER                              │
-│                    Accesses http://13.127.14.68                         │
+│                    Accesses http://<EC2_PUBLIC_IP>                      │
 │                    Sees updated MediLink application                    │
 └─────────────────────────────────────────────────────────────────────────┘
 
@@ -312,13 +309,13 @@ docker-compose up --build -d
          │     network: medilink-net
          │
          ├──▶ backend      (starts after mongo)
-         │     build: ./backend/Dockerfile
+         │     build: ./backend
          │     port: 5000:5000
          │     env: MONGO_URI, JWT_SECRET, PORT
          │     network: medilink-net
          │
          └──▶ nginx        (starts last)
-               build: nginx/Dockerfile (multi-stage)
+               build: ./nginx
                port: 80:80
                network: medilink-net
 ```
@@ -376,7 +373,16 @@ Stage 2 — Final Image
 
 ---
 
-## 🗄️ Database Schema (MongoDB)
+## � Refresh Token Security
+- `RefreshToken` documents are stored in `backend/models/RefreshToken.js` and expire automatically via the `expiresAt` TTL index.
+- `authController.refresh` rotates tokens on use by deleting the existing refresh token record and inserting a new one with a fresh 30d expiry.
+- `authController.logout` revokes the active refresh token by deleting its stored DB record and clearing the cookie.
+- The current implementation stores refresh tokens as plain JWT strings in MongoDB; stronger hardening should hash refresh tokens and limit concurrent active tokens per user.
+- Token creation and verification logic lives in `backend/services/authService.js`.
+
+---
+
+## Database Schema (MongoDB)
 
 ```
   medilink (database)
@@ -423,7 +429,33 @@ Stage 2 — Final Image
 
 ---
 
-## 📦 Tech Stack
+## �️ PHI Security & Compliance
+This architecture stores sensitive patient health information in `prescriptions` and `medicalrecords` collections. Key fields include `appointmentId`, `patientId`, `doctorId`, `diagnosis`, `medicines`, `allergies`, `chronicDiseases`, and `emergencyContact`.
+
+Recommended protections:
+- MongoDB encryption-at-rest using managed disk encryption or Atlas built-in encryption.
+- Field-level encryption for highly sensitive fields such as `diagnosis`, `allergies`, and `emergencyContact`.
+- Strict RBAC/authorization rules to ensure only authorized roles can access patient, doctor, and prescription data.
+- Audit logging for reads and writes on PHI collections, with a centralized log store and retention policy.
+
+Operational best practices:
+- Daily backups with at least 30-day retention and documented restore procedures.
+- Disaster recovery plan with target RTO/RPO and regular restore drills.
+- Data deletion and retention policy tied to clinical and regulatory requirements.
+
+Compliance guidance:
+- Follow HIPAA controls for US deployments: access controls, audit logs, breach notification, and minimum necessary access.
+- Follow GDPR requirements for EU deployments: data subject rights, lawful basis for processing, data minimization, and breach reporting.
+- Maintain breach notification procedures and contact lists for affected parties.
+
+Existing repository pointers:
+- `backend/services/authService.js` and `backend/models/RefreshToken.js` for auth/token flow.
+- `backend/services/storage.js` for the planned storage provider integration.
+- Infrastructure and backup/audit configs should live in a dedicated ops/infrastructure repo or secured cloud console, not in source code.
+
+---
+
+## �📦 Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
@@ -443,26 +475,49 @@ Stage 2 — Final Image
 
 ## 🚀 Local Setup
 
+Use `.env.example` as the starting point for local environment variables.
+
+Required vars:
+- `MONGO_URI`: local MongoDB URI, e.g. `mongodb://mongo:27017/medilink`
+- `JWT_SECRET`: secure secret (recommended minimum 32 characters)
+- `PORT`: backend port (`5000` default)
+
+Optional vars:
+- `NODE_ENV`: `development` or `production`
+- `AWS_S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`: only required if S3 storage is enabled later
+- `REFRESH_SECRET`: optional separate refresh token secret
+
+Local setup:
 ```bash
-# Clone the repo
 git clone https://github.com/Suraj-07823/MediLink.git
 cd MediLink
-
-# Run all services
-docker-compose up --build -d
-
-# Check status
-docker-compose ps
-
-# View logs
-docker-compose logs backend
-docker-compose logs nginx
-
-# Stop all
-docker-compose down
+cp .env.example .env
+# Edit .env and set JWT_SECRET plus any local values
 ```
 
-Access at: `http://localhost`
+Docker compose:
+- The current `docker-compose.yml` embeds backend env values directly.
+- Run `docker compose up --build -d` (or `docker-compose up --build -d` for legacy Docker Compose).
+- If you want `docker-compose` to load `.env`, add an `env_file: .env` entry under the `backend` service.
+
+Check status and logs:
+```bash
+docker compose ps
+docker compose logs backend
+docker compose logs nginx
+```
+
+Stop services:
+```bash
+docker compose down
+```
+
+Initial data and admin setup:
+- There is no dedicated admin seed script in this repo.
+- Create the first admin user via the API (`POST /api/auth/register` with `role=admin`) or add one directly in MongoDB.
+- MongoDB initialization is handled by the service startup; add seed data through API calls or database inserts as needed.
+
+Access the app at: `http://localhost`
 
 ---
 
