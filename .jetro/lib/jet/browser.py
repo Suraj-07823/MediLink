@@ -93,7 +93,12 @@ def login_and_fetch(url, domain=None, wait_selector=None, timeout=25000):
 
     try:
         if cred and cred.get("loginUrl"):
-            page.goto(cred["loginUrl"], timeout=timeout, wait_until="networkidle")
+            try:
+                page.goto(cred["loginUrl"], timeout=timeout, wait_until="networkidle")
+            except Exception as e:
+                raise RuntimeError(
+                    f"Failed to navigate to login URL {cred['loginUrl']}: {e}"
+                ) from e
             time.sleep(random.uniform(0.5, 1.5))
 
             selectors = cred.get("loginSelectors", {})
@@ -110,12 +115,44 @@ def login_and_fetch(url, domain=None, wait_selector=None, timeout=25000):
                 'button[type="submit"], input[type="submit"], .login-btn, #login-btn'
             )
 
-            page.fill(username_sel, cred["username"])
+            # Validate username field exists before filling
+            try:
+                if not page.query_selector(username_sel):
+                    raise RuntimeError(f"Username field selector not found: {username_sel}")
+                page.fill(username_sel, cred["username"])
+            except Exception as e:
+                raise RuntimeError(
+                    f"Failed to fill username field (selector={username_sel}) at {cred['loginUrl']}: {e}"
+                ) from e
             time.sleep(random.uniform(0.3, 0.7))
-            page.fill(password_sel, cred["password"])
+
+            # Validate password field exists before filling
+            try:
+                if not page.query_selector(password_sel):
+                    raise RuntimeError(f"Password field selector not found: {password_sel}")
+                page.fill(password_sel, cred["password"])
+            except Exception as e:
+                raise RuntimeError(
+                    f"Failed to fill password field (selector={password_sel}) at {cred['loginUrl']}: {e}"
+                ) from e
             time.sleep(random.uniform(0.3, 0.7))
-            page.click(submit_sel)
-            page.wait_for_load_state("networkidle", timeout=timeout)
+
+            # Validate submit button exists before clicking
+            try:
+                if not page.query_selector(submit_sel):
+                    raise RuntimeError(f"Submit button selector not found: {submit_sel}")
+                page.click(submit_sel)
+            except Exception as e:
+                raise RuntimeError(
+                    f"Failed to click submit button (selector={submit_sel}) at {cred['loginUrl']}: {e}"
+                ) from e
+
+            try:
+                page.wait_for_load_state("networkidle", timeout=timeout)
+            except Exception as e:
+                raise RuntimeError(
+                    f"Login page did not reach idle state after submission at {cred['loginUrl']}: {e}"
+                ) from e
             time.sleep(random.uniform(1.0, 2.0))
 
         page.goto(url, timeout=timeout, wait_until="networkidle")
@@ -128,6 +165,11 @@ def login_and_fetch(url, domain=None, wait_selector=None, timeout=25000):
             "cookies": context.cookies(),
             "url": page.url,
         }
+    except Exception as e:
+        # Re-raise with a general wrapper if not already a RuntimeError
+        if isinstance(e, RuntimeError):
+            raise
+        raise RuntimeError(f"Login and fetch failed for {url}: {e}") from e
     finally:
         browser.close()
         pw.stop()
