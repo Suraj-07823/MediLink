@@ -12,32 +12,12 @@ export default function DoctorDashboard() {
     }
   }, [user, navigate]);
 
-  const actions = [
-    {
-      icon: "📅",
-      title: "Today's Schedule",
-      desc: "View and manage today's appointments",
-      href: "/doctor/schedule",
-    },
-    {
-      icon: "👥",
-      title: "My Patients",
-      desc: "View patient history and records",
-      href: "/doctor/patients",
-    },
-    {
-      icon: "🗓️",
-      title: "Manage Schedule",
-      desc: "Update your availability",
-      href: "/doctor/schedule",
-    },
-    {
-      icon: "👤",
-      title: "My Profile",
-      desc: "Edit profile and clinic details",
-      href: "/doctor/profile",
-    },
-  ];
+const actions = [
+  { icon: '📅', title: "Today's Schedule", desc: "View and manage today's appointments", href: '/doctor/schedule' },
+  { icon: '👥', title: 'My Patients', desc: 'View patient history and records', href: '/doctor/patients' },
+  { icon: '🗓️', title: 'Manage Schedule', desc: 'Update your availability', href: '/doctor/schedule' },
+  { icon: '👤', title: 'My Profile', desc: 'Edit profile and clinic details', href: '/doctor/profile' },
+];
 
   return (
     <div className="space-y-8">
