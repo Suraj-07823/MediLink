@@ -333,7 +333,7 @@ Stage 1 — Builder
 Stage 2 — Final Image
   FROM nginx:stable-alpine
   COPY nginx.conf
-  COPY /app/dist → /usr/share/nginx/html
+  COPY /app/dist /usr/share/nginx/html
   EXPOSE 80
   (No Node.js in final image — small & secure)
 ```
@@ -373,7 +373,7 @@ Stage 2 — Final Image
 
 ---
 
-## � Refresh Token Security
+## Refresh Token Security
 - `RefreshToken` documents are stored in `backend/models/RefreshToken.js` and expire automatically via the `expiresAt` TTL index.
 - `authController.refresh` rotates tokens on use by deleting the existing refresh token record and inserting a new one with a fresh 30d expiry.
 - `authController.logout` revokes the active refresh token by deleting its stored DB record and clearing the cookie.
@@ -429,7 +429,7 @@ Stage 2 — Final Image
 
 ---
 
-## �️ PHI Security & Compliance
+## PHI Security & Compliance
 This architecture stores sensitive patient health information in `prescriptions` and `medicalrecords` collections. Key fields include `appointmentId`, `patientId`, `doctorId`, `diagnosis`, `medicines`, `allergies`, `chronicDiseases`, and `emergencyContact`.
 
 Recommended protections:
@@ -455,7 +455,7 @@ Existing repository pointers:
 
 ---
 
-## �📦 Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
