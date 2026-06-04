@@ -155,10 +155,20 @@ def login_and_fetch(url, domain=None, wait_selector=None, timeout=25000):
                 ) from e
             time.sleep(random.uniform(1.0, 2.0))
 
-        page.goto(url, timeout=timeout, wait_until="networkidle")
+        try:
+            page.goto(url, timeout=timeout, wait_until="networkidle")
+        except Exception as e:
+            raise RuntimeError(
+                f"Failed to navigate to target URL {url} (timeout={timeout}ms): {e}"
+            ) from e
 
         if wait_selector:
-            page.wait_for_selector(wait_selector, timeout=timeout)
+            try:
+                page.wait_for_selector(wait_selector, timeout=timeout)
+            except Exception as e:
+                raise RuntimeError(
+                    f"Selector did not appear {wait_selector} (timeout={timeout}ms): {e}"
+                ) from e
 
         return {
             "html": page.content(),
