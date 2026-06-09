@@ -142,14 +142,6 @@ export default function Login() {
                 </Link>
               </p>
             </div>
-
-            {/* Demo info */}
-            <div className="mt-8 p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700">
-              <p className="font-semibold mb-2">Demo credentials</p>
-              <p className="text-xs leading-relaxed">
-                <span className="font-mono">demo@test.com</span> / <span className="font-mono">demo123</span>
-              </p>
-            </div>
           </div>
         </div>
       </main>
