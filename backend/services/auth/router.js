@@ -1,8 +1,7 @@
-// DEPRECATED - moved to services/auth/
 const express = require('express');
 const rateLimit = require('express-rate-limit');
-const { protect } = require('../middleware/auth');
-const authController = require('../controllers/authController');
+const { protect } = require('../../middleware/auth');
+const authController = require('./controller');
 
 const router = express.Router();
 
@@ -17,7 +16,7 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Auth routes delegate to controller (non-breaking)
+// Auth routes delegate to controller
 router.post('/register', authLimiter, authController.register);
 router.post('/register-doctor', authController.registerDoctor);
 router.post('/login', authLimiter, authController.login);

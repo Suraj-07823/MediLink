@@ -1,15 +1,7 @@
-// DEPRECATED - moved to services/admin/
-const express = require('express');
-const Doctor = require('../models/Doctor');
-const { protect, authorize } = require('../middleware/auth');
-
-const router = express.Router();
-
-// Protect all admin routes and require admin role
-router.use(protect, authorize('admin'));
+const Doctor = require('../../models/Doctor');
 
 // GET /api/admin/doctors/pending
-router.get('/doctors/pending', async (req, res) => {
+async function getPendingDoctors(req, res) {
   try {
     const doctors = await Doctor.find({ status: 'pending' })
       .populate('userId', 'name email phone')
@@ -20,10 +12,10 @@ router.get('/doctors/pending', async (req, res) => {
     console.error('Admin pending doctors error:', error);
     res.status(500).json({ success: false, message: 'Unable to fetch pending doctors' });
   }
-});
+}
 
 // GET /api/admin/doctors
-router.get('/doctors', async (req, res) => {
+async function getDoctors(req, res) {
   try {
     const { status } = req.query;
     const filter = {};
@@ -41,10 +33,10 @@ router.get('/doctors', async (req, res) => {
     console.error('Admin doctors list error:', error);
     res.status(500).json({ success: false, message: 'Unable to fetch doctors' });
   }
-});
+}
 
 // PUT /api/admin/doctors/:id/approve
-router.put('/doctors/:id/approve', async (req, res) => {
+async function approveDoctor(req, res) {
   try {
     const doctor = await Doctor.findById(req.params.id);
     if (!doctor) {
@@ -67,10 +59,10 @@ router.put('/doctors/:id/approve', async (req, res) => {
     console.error('Admin approve doctor error:', error);
     res.status(500).json({ success: false, message: 'Unable to approve doctor' });
   }
-});
+}
 
 // PUT /api/admin/doctors/:id/reject
-router.put('/doctors/:id/reject', async (req, res) => {
+async function rejectDoctor(req, res) {
   try {
     const { reason } = req.body;
     if (!reason || !reason.trim()) {
@@ -92,6 +84,11 @@ router.put('/doctors/:id/reject', async (req, res) => {
     console.error('Admin reject doctor error:', error);
     res.status(500).json({ success: false, message: 'Unable to reject doctor' });
   }
-});
+}
 
-module.exports = router;
+module.exports = {
+  getPendingDoctors,
+  getDoctors,
+  approveDoctor,
+  rejectDoctor
+};

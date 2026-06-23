@@ -1,8 +1,7 @@
-// DEPRECATED - moved to services/clinical/
-const Prescription = require('../models/Prescription');
-const Appointment = require('../models/Appointment');
+const Prescription = require('../../models/Prescription');
+const Appointment = require('../../models/Appointment');
 
-async function list(req, res) {
+async function listPrescriptions(req, res) {
   try {
     const filter = req.user.role === 'doctor' ? { doctor: req.user._id } : { patient: req.user._id };
     const prescriptions = await Prescription.find(filter).populate('doctor patient appointment');
@@ -12,7 +11,7 @@ async function list(req, res) {
   }
 }
 
-async function create(req, res) {
+async function createPrescription(req, res) {
   if (req.user.role !== 'doctor') return res.status(403).json({ message: 'Only doctors may create prescriptions' });
   try {
     const { appointmentId, medicines, notes } = req.body;
@@ -25,4 +24,7 @@ async function create(req, res) {
   }
 }
 
-module.exports = { list, create };
+module.exports = { 
+  listPrescriptions, 
+  createPrescription 
+};

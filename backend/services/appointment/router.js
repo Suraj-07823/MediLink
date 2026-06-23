@@ -1,7 +1,6 @@
-// DEPRECATED - moved to services/appointment/
 const express = require('express');
-const { protect } = require('../middleware/auth');
-const appointmentController = require('../controllers/appointmentController');
+const { protect } = require('../../middleware/auth');
+const appointmentController = require('./controller');
 
 const router = express.Router();
 

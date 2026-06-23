@@ -1,10 +1,9 @@
-// DEPRECATED - moved to services/auth/
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
-const User = require('../models/User');
-const Doctor = require('../models/Doctor');
-const RefreshToken = require('../models/RefreshToken');
-const { createToken, createRefreshToken, verifyRefreshToken, refreshCookieOptions } = require('../services/authService');
+const User = require('../../models/User');
+const Doctor = require('../../models/Doctor');
+const RefreshToken = require('../../models/RefreshToken');
+const { createToken, createRefreshToken, verifyRefreshToken, refreshCookieOptions } = require('./service');
 
 // Register (patient)
 async function register(req, res) {

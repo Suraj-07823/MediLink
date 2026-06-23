@@ -1,6 +1,5 @@
-// DEPRECATED - moved to services/appointment/
-const Appointment = require('../models/Appointment');
-const Doctor = require('../models/Doctor');
+const Appointment = require('../../models/Appointment');
+const Doctor = require('../../models/Doctor');
 
 async function list(req, res) {
   try {

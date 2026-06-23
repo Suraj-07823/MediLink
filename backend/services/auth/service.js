@@ -1,4 +1,3 @@
-// DEPRECATED - moved to services/auth/
 const jwt = require('jsonwebtoken');
 
 const createToken = (id, expiresIn = process.env.ACCESS_TOKEN_EXPIRES_IN || '1h') => {
@@ -32,5 +31,3 @@ module.exports = {
   verifyRefreshToken,
   refreshCookieOptions
 };
-// Placeholder auth service
-// Business logic will live here in Phase 3

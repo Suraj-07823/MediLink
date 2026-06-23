@@ -1,3 +1,4 @@
+// DEPRECATED - moved to services/clinical/
 const express = require('express');
 const { protect } = require('../middleware/auth');
 const prescriptionController = require('../controllers/prescriptionController');
