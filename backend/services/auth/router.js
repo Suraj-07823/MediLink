@@ -22,6 +22,7 @@ router.post('/register-doctor', authController.registerDoctor);
 router.post('/login', authLimiter, authController.login);
 router.post('/refresh', authLimiter, authController.refresh);
 router.get('/me', protect, authController.me);
+router.get('/verify-email', authController.verifyEmail);
 router.post('/logout', authController.logout);
 
 module.exports = router;

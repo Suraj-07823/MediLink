@@ -13,10 +13,10 @@ export default function CheckIn() {
       setLoading(true);
       try {
         const response = await axios.get('/api/appointments');
-        const booked = Array.isArray(response.data)
-          ? response.data.filter((appointment) => appointment.status === 'booked')
+        const relevant = Array.isArray(response.data)
+          ? response.data.filter((appointment) => ['booked', 'checked-in'].includes(appointment.status))
           : [];
-        setAppointments(booked);
+        setAppointments(relevant);
       } catch (fetchError) {
         setInlineMessages({ fetch: fetchError.response?.data?.message || fetchError.message || 'Unable to load appointments.' });
         setAppointments([]);
@@ -89,7 +89,7 @@ export default function CheckIn() {
         </div>
       ) : appointments.length === 0 ? (
         <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center text-slate-700 shadow-sm">
-          No appointments ready for check-in
+          No upcoming appointments
         </div>
       ) : (
         <div className="space-y-6">
@@ -111,7 +111,7 @@ export default function CheckIn() {
 
                 <div className="mt-4 flex flex-wrap items-center gap-3">
                   <span className="rounded-full bg-indigo-50 px-3 py-1 text-sm text-indigo-700">Status: {appointment.status}</span>
-                  {appointment.status === 'booked' && (
+                  {appointment.status === 'booked' ? (
                     <button
                       type="button"
                       onClick={() => handleCheckInClick(appointment._id)}
@@ -119,7 +119,11 @@ export default function CheckIn() {
                     >
                       Check In
                     </button>
-                  )}
+                  ) : appointment.status === 'checked-in' ? (
+                    <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-4 py-2 text-sm font-semibold text-emerald-700">
+                      ✓ Checked In
+                    </span>
+                  ) : null}
                 </div>
 
                 {isActive && appointment.status === 'booked' && (

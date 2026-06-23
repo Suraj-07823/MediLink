@@ -14,6 +14,8 @@ export default function Booking() {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState('');
+  const [successOtp, setSuccessOtp] = useState('');
+  const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
 
   const getTodayString = () => {
@@ -102,15 +104,24 @@ export default function Booking() {
       });
 
       const otp = response.data?.appointment?.otp || 'N/A';
-      setMessage(`Your OTP is: ${otp}. Save this for check-in.`);
+      setSuccessOtp(otp);
+      setMessage('Appointment booked successfully!');
 
       setTimeout(() => {
         navigate('/patient/dashboard');
-      }, 3000);
+      }, 8000);
     } catch (submitError) {
       setError(submitError.response?.data?.message || submitError.message || 'Failed to book appointment.');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleCopyOtp = () => {
+    if (successOtp) {
+      navigator.clipboard.writeText(successOtp);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -208,8 +219,38 @@ export default function Booking() {
               </button>
 
               {message && (
-                <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
-                  {message}
+                <div className="flex w-full flex-col gap-4 rounded-3xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm">
+                  <div className="text-lg font-bold text-emerald-800">{message}</div>
+                  
+                  <div className="flex items-center gap-4">
+                    <div className="text-sm text-emerald-700">
+                      Your OTP: <span className="font-mono text-lg font-bold">{successOtp}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCopyOtp}
+                      className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-emerald-700"
+                    >
+                      {copied ? 'Copied!' : 'Copy OTP'}
+                    </button>
+                  </div>
+                  
+                  <p className="text-xs text-emerald-600">
+                    Save this OTP — you'll need it to check in at the clinic.
+                  </p>
+                  
+                  <div className="flex flex-col gap-3">
+                    <button
+                      type="button"
+                      onClick={() => navigate('/patient/dashboard')}
+                      className="rounded-3xl bg-indigo-600 px-6 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
+                    >
+                      Go to Dashboard
+                    </button>
+                    <p className="text-center text-[10px] text-emerald-600">
+                      Redirecting in 8 seconds...
+                    </p>
+                  </div>
                 </div>
               )}
 

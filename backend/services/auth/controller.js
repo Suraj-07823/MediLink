@@ -1,9 +1,11 @@
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 const User = require('../../models/User');
 const Doctor = require('../../models/Doctor');
 const RefreshToken = require('../../models/RefreshToken');
 const { createToken, createRefreshToken, verifyRefreshToken, refreshCookieOptions } = require('./service');
+const { sendVerificationEmail } = require('../email');
 
 // Register (patient)
 async function register(req, res) {
@@ -22,11 +24,25 @@ async function register(req, res) {
 		if (existingUser) return res.status(409).json({ message: 'Email already registered. Please use another email or login.' });
 
 		const hashedPassword = await bcrypt.hash(password, 10);
-		const newUser = new User({ name, email, phone, password: hashedPassword, role, dateOfBirth, gender, bloodGroup, address });
+		
+		const verificationToken = crypto.randomBytes(32).toString('hex');
+		const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+		const newUser = new User({ 
+			name, email, phone, password: hashedPassword, role, dateOfBirth, gender, bloodGroup, address,
+			verificationToken,
+			verificationTokenExpiry
+		});
 		await newUser.save();
 
+		await sendVerificationEmail(newUser.email, verificationToken);
+
 		const token = createToken(newUser._id);
-		res.status(201).json({ message: 'Registration successful', token, user: { id: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role, phone: newUser.phone } });
+		res.status(201).json({ 
+			message: 'Registration successful! Please check your email to verify your account.', 
+			token, 
+			user: { id: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role, phone: newUser.phone } 
+		});
 	} catch (error) {
 		console.error('Registration error:', error);
 		res.status(500).json({ message: 'Registration failed', error: error.message });
@@ -183,11 +199,39 @@ async function logout(req, res) {
 	}
 }
 
+// Verify Email
+async function verifyEmail(req, res) {
+	try {
+		const { token } = req.query;
+		if (!token) return res.status(400).json({ message: 'Verification token is required' });
+
+		const user = await User.findOne({
+			verificationToken: token,
+			verificationTokenExpiry: { $gt: new Date() }
+		});
+
+		if (!user) {
+			return res.status(400).json({ message: 'Invalid or expired verification token' });
+		}
+
+		user.isVerified = true;
+		user.verificationToken = undefined;
+		user.verificationTokenExpiry = undefined;
+		await user.save();
+
+		res.status(200).json({ message: 'Email verified successfully! You can now login.' });
+	} catch (error) {
+		console.error('Email verification error:', error);
+		res.status(500).json({ message: 'Email verification failed', error: error.message });
+	}
+}
+
 module.exports = {
 	register,
 	registerDoctor,
 	login,
 	refresh,
 	me,
-	logout
+	logout,
+	verifyEmail
 };

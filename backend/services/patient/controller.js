@@ -23,6 +23,16 @@ async function getDoctors(req, res) {
   }
 }
 
+async function getDoctor(req, res) {
+  try {
+    const doctor = await Doctor.findById(req.params.id).populate('userId', 'name email phone profilePhoto');
+    if (!doctor) return res.status(404).json({ message: 'Doctor not found' });
+    res.json({ success: true, doctor });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch doctor details', error: error.message });
+  }
+}
+
 async function getSlots(req, res) {
   try {
     const { date } = req.query;
@@ -74,6 +84,7 @@ async function createDoctor(req, res) {
 
 module.exports = {
   getDoctors,
+  getDoctor,
   getSlots,
   createDoctor
 };

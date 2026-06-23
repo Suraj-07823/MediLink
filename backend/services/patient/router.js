@@ -6,6 +6,7 @@ const router = express.Router();
 
 // Doctor discovery (accessible to patients)
 router.get('/doctors', patientController.getDoctors);
+router.get('/doctors/:id', patientController.getDoctor);
 router.get('/doctors/:id/slots', patientController.getSlots);
 
 // Admin-level doctor creation (legacy route)

@@ -79,6 +79,12 @@ const userSchema = new mongoose.Schema({
   // Used to revoke previously issued access tokens: tokens issued before this timestamp are invalid
   tokenInvalidBefore: {
     type: Date
+  },
+  verificationToken: {
+    type: String
+  },
+  verificationTokenExpiry: {
+    type: Date
   }
 }, { timestamps: true });
 
