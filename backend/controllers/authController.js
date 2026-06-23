@@ -36,50 +36,46 @@ async function register(req, res) {
 
 // Doctor registration
 async function registerDoctor(req, res) {
-	const session = await mongoose.startSession();
-	session.startTransaction();
+  try {
+    const { name, email, phone, password, speciality, qualification, experience, regNumber, consultationFee, clinicName, clinicAddress, about } = req.body;
 
-	try {
-		const { name, email, phone, password, speciality, qualification, experience, regNumber, consultationFee, clinicName, clinicAddress, about } = req.body;
+    if (!name || !email || !phone || !password || !speciality || !qualification || !regNumber) {
+      return res.status(400).json({ message: 'Missing required doctor fields' });
+    }
 
-		if (!name || !email || !phone || !password || !speciality || !qualification || !regNumber) {
-			await session.abortTransaction();
-			session.endSession();
-			return res.status(400).json({ message: 'Missing required doctor fields' });
-		}
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(409).json({ message: 'Email already registered' });
+    }
 
-		const existingUser = await User.findOne({ email }).session(session);
-		if (existingUser) {
-			await session.abortTransaction();
-			session.endSession();
-			return res.status(409).json({ message: 'Email already registered' });
-		}
+    const existingDoctor = await Doctor.findOne({ regNumber });
+    if (existingDoctor) {
+      return res.status(409).json({ message: 'Medical registration number already registered' });
+    }
 
-		const existingDoctor = await Doctor.findOne({ regNumber }).session(session);
-		if (existingDoctor) {
-			await session.abortTransaction();
-			session.endSession();
-			return res.status(409).json({ message: 'Medical registration number already registered' });
-		}
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({ name, email, phone, password: hashedPassword, role: 'doctor' });
+    await newUser.save();
 
-		const hashedPassword = await bcrypt.hash(password, 10);
-		const newUser = new User({ name, email, phone, password: hashedPassword, role: 'doctor' });
-		await newUser.save({ session });
+    const doctorProfile = new Doctor({
+      userId: newUser._id,
+      speciality, qualification, experience, regNumber,
+      consultationFee, clinicName, clinicAddress, about,
+      status: 'pending'
+    });
+    await doctorProfile.save();
 
-		const doctorProfile = new Doctor({ userId: newUser._id, speciality, qualification, experience, regNumber, consultationFee, clinicName, clinicAddress, about, status: 'pending' });
-		await doctorProfile.save({ session });
+    const token = createToken(newUser._id);
+    res.status(201).json({
+      message: 'Doctor registration successful. Awaiting admin approval.',
+      token,
+      user: { id: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role, doctorStatus: doctorProfile.status }
+    });
 
-		await session.commitTransaction();
-		session.endSession();
-
-		const token = createToken(newUser._id);
-		res.status(201).json({ message: 'Doctor registration successful. Awaiting admin approval.', token, user: { id: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role, doctorStatus: doctorProfile.status } });
-	} catch (error) {
-		await session.abortTransaction();
-		session.endSession();
-		console.error('Doctor registration error:', error);
-		res.status(500).json({ message: 'Doctor registration failed', error: error.message });
-	}
+  } catch (error) {
+    console.error('Doctor registration error:', error);
+    res.status(500).json({ message: 'Doctor registration failed', error: error.message });
+  }
 }
 
 // Login
