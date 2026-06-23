@@ -8,11 +8,21 @@ services:
       - MONGO_URI=mongodb://mongo:27017/medilink
       - JWT_SECRET=supersecretkey
       - MONGO_RETRY_DELAY_MS=3000
+      - REDIS_URL=redis://redis:6379/0
     ports:
       - "5000:5000"
     restart: unless-stopped
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:5000/api/health', (res) => { if (res.statusCode === 200) process.exit(0); else process.exit(1); }).on('error', (e) => { process.exit(1); })\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     networks:
       - medilink-net
 
@@ -24,7 +34,8 @@ services:
       - "80:80"
     restart: unless-stopped
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - medilink-net
 
@@ -34,11 +45,7 @@ services:
     volumes:
       - mongo-data:/data/db
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          'mongo --eval "db.runCommand({ ping: 1 })" || mongosh --eval "db.runCommand({ ping: 1 })"',
-        ]
+      test: ["CMD-SHELL", "mongosh --eval 'db.runCommand({ ping: 1 })'"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -46,8 +53,33 @@ services:
     networks:
       - medilink-net
 
+  redis:
+    image: redis:7-alpine
+    container_name: medilink-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medilink-net
+
 volumes:
   mongo-data:
+  redis_data:
 
 networks:
   medilink-net:
