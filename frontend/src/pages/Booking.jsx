@@ -61,7 +61,7 @@ export default function Booking() {
     try {
       setError('');
       const response = await axios.get(`/api/doctors/${doctorId}/slots`, { params: { date } });
-      setAvailableSlots(Array.isArray(response.data) ? response.data : []);
+      setAvailableSlots(response.data?.slots || []);
     } catch (slotError) {
       setAvailableSlots([]);
       setError(slotError.response?.data?.message || slotError.message || 'Unable to load available slots.');
@@ -123,10 +123,9 @@ export default function Booking() {
       };
     }
 
-    const value = slot.timeSlot || slot.label || '';
-    const label = slot.isAvailable === false ? `${value} (Full)` : value;
+    const label = `${slot.startTime}–${slot.endTime}${slot.isAvailable === false ? ' (Full)' : ''}`;
     return {
-      value,
+      value: slot.startTime,
       label,
       disabled: slot.isAvailable === false
     };

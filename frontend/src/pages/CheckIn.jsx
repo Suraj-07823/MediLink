@@ -95,7 +95,7 @@ export default function CheckIn() {
         <div className="space-y-6">
           {appointments.map((appointment) => {
             const doctorName = appointment.doctorId?.userId?.name || 'Doctor';
-            const fee = appointment.consultationFee != null ? `₹${appointment.consultationFee}` : '₹0';
+            const fee = appointment.fee != null ? `₹${appointment.fee}` : '₹0';
             const message = inlineMessages[appointment._id];
             const isActive = activeCheckInId === appointment._id;
 
