@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body {
+  min-height: 100%;
+}
+
+body {
+  background: #f8fafc;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+:root {
+  /* Color tokens */
+  --ml-primary-patient: #2563EB;
+  --ml-primary-patient-light: #EFF6FF;
+  --ml-primary-doctor: #16A34A;
+  --ml-primary-doctor-light: #F0FDF4;
+  --ml-primary-admin: #7C3AED;
+
+  /* Spacing / radii */
+  --ml-radius-lg: 1rem;
+  --ml-radius-md: 0.75rem;
+}
+
+/* Utility helpers for consistent cards */
+.ml-card {
+  background: #fff;
+  border: 1px solid rgba(15,23,42,0.06);
+  border-radius: var(--ml-radius-lg);
+  padding: 1.5rem;
+}
