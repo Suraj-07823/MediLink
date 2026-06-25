@@ -35,28 +35,35 @@ services:
     networks:
       - medilink-net
 
-  nginx:
+  patient-app:
     build:
       context: .
-      dockerfile: nginx/Dockerfile
-    ports:
-      - "80:80"
-      - "443:443"
-    restart: unless-stopped
+      dockerfile: apps/patient/Dockerfile
+    ports: ["3000:80"]
     depends_on:
       backend:
         condition: service_healthy
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-    networks:
-      - medilink-net
+    networks: [medilink-net]
+
+  doctor-app:
+    build:
+      context: .
+      dockerfile: apps/doctor/Dockerfile
+    ports: ["3001:80"]
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks: [medilink-net]
+
+  admin-app:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+    ports: ["3002:80"]
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks: [medilink-net]
 
   mongo:
     image: mongo:6.0
