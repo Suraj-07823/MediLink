@@ -18,13 +18,31 @@ jobs:
         with:
           node-version: "20"
 
-      # Frontend
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm install
+      # Patient app
+      - name: Install patient app dependencies
+        working-directory: apps/patient
+        run: npm install --legacy-peer-deps
 
-      - name: Build frontend
-        working-directory: frontend
+      - name: Build patient app
+        working-directory: apps/patient
+        run: npm run build
+
+      # Doctor app
+      - name: Install doctor app dependencies
+        working-directory: apps/doctor
+        run: npm install --legacy-peer-deps
+
+      - name: Build doctor app
+        working-directory: apps/doctor
+        run: npm run build
+
+      # Admin app
+      - name: Install admin app dependencies
+        working-directory: apps/admin
+        run: npm install --legacy-peer-deps
+
+      - name: Build admin app
+        working-directory: apps/admin
         run: npm run build
 
       # Backend
@@ -35,13 +53,6 @@ jobs:
       - name: Run backend tests
         working-directory: backend
         run: echo "No tests configured yet"
-
-      # Docker validation
-      - name: Build nginx Docker image
-        run: docker build -t medilink-nginx -f nginx/Dockerfile .
-
-      - name: Build backend Docker image
-        run: docker build -t medilink-backend -f backend/Dockerfile backend
 
   deploy:
     needs: build
@@ -56,10 +67,10 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
+          command_timeout: 30m
           script: |
             set -e
 
-            # Clone repo if it doesn't exist yet
             if [ ! -d "/home/ubuntu/medilink/.git" ]; then
               git clone https://github.com/Suraj-07823/MediLink.git /home/ubuntu/medilink
             fi
@@ -72,8 +83,20 @@ jobs:
             echo "Stopping old containers..."
             docker compose down
 
-            echo "Building and starting containers..."
-            docker compose up -d --build
+            echo "Building backend..."
+            docker compose build backend
+
+            echo "Building patient app..."
+            docker compose build patient-app
+
+            echo "Building doctor app..."
+            docker compose build doctor-app
+
+            echo "Building admin app..."
+            docker compose build admin-app
+
+            echo "Starting containers..."
+            docker compose up -d
 
             echo "Removing unused Docker images..."
             docker image prune -f
